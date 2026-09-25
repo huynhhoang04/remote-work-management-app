@@ -1,0 +1,50 @@
+# ---- Secrets / môi trường ----
+.env
+.env.*
+!.env.example
+*.jks
+*.keystore
+*.p12
+local.properties
+secrets.properties
+
+# ---- Android / Gradle ----
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+captures/
+.cxx/
+*.apk
+*.aab
+*.ap_
+*.dex
+*.class
+output.json
+
+# ---- Java ----
+*.jar
+*.war
+*.ear
+!gradle-wrapper.jar
+out/
+target/
+bin/
+
+# ---- IDE ----
+.idea/
+*.iml
+*.iws
+*.ipr
+.vscode/
+.settings/
+.classpath
+.project
+
+# ---- OS ----
+.DS_Store
+Thumbs.db
+
+# ---- Logs / tạm ----
+*.log
+*.tmp
+*.hprof
