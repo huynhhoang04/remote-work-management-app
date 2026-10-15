@@ -1,0 +1,30 @@
+# Hạ tầng dev local cho backend (docs/04 §13)
+# Cách dùng: docker compose -f infra/docker-compose.yml up -d
+services:
+  db:
+    image: postgres:16
+    container_name: remoteapp-db
+    environment:
+      POSTGRES_DB: remoteapp
+      POSTGRES_USER: remoteapp
+      POSTGRES_PASSWORD: remoteapp
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U remoteapp"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  # SMTP giả lập khi dev — xem email quên mật khẩu tại http://localhost:8025
+  mailpit:
+    image: axllent/mailpit
+    container_name: remoteapp-mailpit
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+
+volumes:
+  pgdata:

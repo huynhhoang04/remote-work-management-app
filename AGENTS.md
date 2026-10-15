@@ -1,132 +1,140 @@
 # AGENTS.md
 
-Hướng dẫn cho AI coding agent (và con người) khi làm việc trong repo này. Đọc file này trước,
-rồi đọc tài liệu liên quan trong `docs/` trước khi viết code.
+Instructions for AI coding agents (and humans) working in this repository. Read this file first,
+then the relevant docs in `docs/` before writing code.
 
-## 1. Dự án này là gì
+## 1. What this project is
 
-**Đề tài 21 — Ứng dụng quản lý và theo dõi làm việc từ xa** (đồ án môn Mobile App):
-app Android cho cá nhân/nhóm nhỏ: quản lý dự án + task (Kanban, timeline), nhắc deadline,
-thống kê năng suất, chat theo dự án, thông báo push. Backend là **Spring Boot modular monolith**
-hiện phục vụ app mobile (sau này có thể thêm client khác).
+**Topic 21 — Remote work management & tracking app** (Mobile App course capstone):
+an Android app for individuals/small teams: project + task management (Kanban, timeline),
+deadline reminders, productivity stats, per-project chat, and push notifications. The backend is a
+**Spring Boot modular monolith** serving the mobile app (other clients may be added later).
 
-Phạm vi đã được **rà soát và cắt giảm** theo góp ý người hướng dẫn: giữ chức năng "nên có của
-một ứng dụng di động", cắt chức năng "đậm chất desktop". Danh sách giữ/cắt cụ thể nằm ở
-`docs/04-thiet-ke-backend.md` mục 1 — **không** thêm lại chức năng đã bị cắt.
+The scope has been **reviewed and trimmed** per the instructor's feedback: keep features that
+"belong in a mobile app", cut features that are "desktop-oriented". The concrete keep/cut list is
+in `docs/04-thiet-ke-backend.md` section 1 — **do not** reintroduce cut features.
 
-## 2. Ràng buộc cứng (không vi phạm)
+## 2. Hard constraints (do not violate)
 
-| Ràng buộc | Giá trị |
+| Constraint | Value |
 |---|---|
 | Backend | **Java 21 LTS + Spring Boot 3.3.x** |
-| Build | **Maven** (dùng `./mvnw`) |
-| Kiến trúc | **Modular monolith** — 1 app, 1 PostgreSQL. KHÔNG microservices, không message broker, không API gateway |
-| CSDL | **PostgreSQL 16**, schema do **Flyway** quản lý (`ddl-auto: validate`) |
-| Xác thực | JWT (access 15' + refresh xoay vòng), RBAC 4 vai trò theo dự án |
-| Mobile | Kotlin + Jetpack Compose (chưa khởi tạo trong repo) |
+| Build | **Maven** (use `./mvnw`) |
+| Architecture | **Modular monolith** — one app, one PostgreSQL. NO microservices, no message broker, no API gateway |
+| Database | **PostgreSQL 16**, schema managed by **Flyway** (`ddl-auto: validate`) |
+| Auth | JWT (15' access + rotating refresh), RBAC with 4 project roles |
+| Mobile | Kotlin + Jetpack Compose (not yet scaffolded in this repo) |
 
-**Đã bị loại trừ có chủ đích:** Redis, MinIO (file lưu đĩa local), workspace/tổ chức, video call
-WebRTC, chat typing/presence, đồng bộ offline 2 chiều, import/export, audit nâng cao theo tài liệu.
-Đừng reintroduce chúng khi chưa có quyết định ghi trong `docs/`.
+**Deliberately excluded:** Redis, MinIO (files on local disk), workspaces/organizations, WebRTC
+video calls, chat typing/presence, two-way offline sync, import/export, advanced audit features.
+Do not reintroduce them without a decision recorded in `docs/`.
 
-## 3. Bản đồ repo
+## 3. Repository map
 
 ```
 backend/                     Spring Boot modular monolith (Maven)
 ├─ src/main/java/com/example/remoteapp/
 │   ├─ config/               Security, WebSocket, OpenAPI
 │   ├─ common/               BaseEntity, ErrorCode, AppException, GlobalExceptionHandler, SecurityUtils
-│   ├─ auth/                 JWT, refresh token, đăng ký/đăng nhập/quên mật khẩu
-│   ├─ user/                 hồ sơ, device FCM
-│   ├─ project/              dự án, thành viên, RBAC (ProjectPermissionService), link mời
+│   ├─ auth/                 JWT, refresh token, register/login/forgot password
+│   ├─ user/                 profile, FCM devices
+│   ├─ project/              projects, members, RBAC (ProjectPermissionService), invite links
 │   ├─ audit/                audit log (leaf module)
-│   └─ (task, schedule, stats, chat, notification, file)  ← các module theo plan
+│   └─ (task, schedule, stats, chat, notification, file)  ← modules per the plan
 ├─ src/main/resources/db/migration/   Flyway V1, V2, ...
-└─ src/test/java/            unit test (Mockito) + integration test (Testcontainers)
-docs/                        tài liệu dự án (xem mục 4)
-.github/workflows/           CI backend (./mvnw test)
-.agents/skills/              kỹ năng hỗ trợ thiết kế mobile app
-android/, infra/             (chưa có) app Kotlin, hạ tầng deploy
+└─ src/test/java/            unit tests (Mockito) + integration tests (Testcontainers)
+docs/                        project documentation (see section 4)
+infra/                       dev docker-compose (PostgreSQL, mailpit)
+.github/workflows/           backend CI (./mvnw test)
+.agents/skills/              mobile app design skills
+android/, infra/             (later) Kotlin app, deployment infra
 ```
 
-## 4. Tài liệu — đọc cái nào trước
+## 4. Documentation — what to read first
 
-| Ưu tiên | Tài liệu | Dùng cho |
+| Priority | Document | Use for |
 |---|---|---|
-| 1 | `docs/plan-backend/03-chuc-nang-dac-ta-va-implementation.md` | Đặc tả + implementation từng chức năng (mã FR, luật nghiệp vụ) |
-| 2 | `docs/plan-backend/02-danh-sach-api.md` | Hợp đồng API + mã lỗi |
-| 3 | `docs/plan-backend/01-kien-truc-va-stack.md` | Kiến trúc, stack, dependency rules, quy ước |
-| 4 | `docs/04-thiet-ke-backend.md` | Phạm vi giữ/cắt, ERD, RBAC, lộ trình |
-| — | `docs/01–03`, `docs/baocao-*` | Bối cảnh/bản gốc — đã bị `docs/04` điều chỉnh một phần |
+| 1 | `docs/plan-backend/03-chuc-nang-dac-ta-va-implementation.md` | Feature specs + implementation (FR codes, business rules) |
+| 2 | `docs/plan-backend/02-danh-sach-api.md` | API contract + error codes |
+| 3 | `docs/plan-backend/01-kien-truc-va-stack.md` | Architecture, stack, dependency rules, conventions |
+| 4 | `docs/04-thiet-ke-backend.md` | Keep/cut scope, ERD, RBAC, roadmap |
+| — | `docs/01–03`, `docs/baocao-*` | Context/original drafts — partially superseded by `docs/04` |
 
-Đổi API/entity/bảng → cập nhật tài liệu tương ứng **trong cùng commit**.
+Docs are written in Vietnamese (project requirement). When an API/entity/table changes, update the
+matching doc **in the same commit**.
 
-## 5. Quy ước backend
+## 5. Backend conventions
 
-- **Phân tầng:** `controller → service → repository → entity`. Controller không viết logic
-  nghiệp vụ; **không** trả entity ra ngoài — luôn dùng DTO (`record`).
-- **Dependency rules (module):** không truy cập repository của module khác (ngoại lệ `stats`
-  query đọc tổng hợp). Gọi module khác qua public service. Chi tiết: `docs/plan-backend/01` §4.2.
-- **Validation:** DTO dùng Jakarta (`@NotBlank`, `@Size`, `@Email`...); service kiểm tra tiếp
-  luật nghiệp vụ (duy nhất, quyền, trạng thái...).
-- **Lỗi:** ném `AppException(ErrorCode, message)`; `GlobalExceptionHandler` trả format chuẩn
-  (`timestamp/status/code/message/path`). Không ném exception kiểu khác từ service.
-- **Phân quyền:** mọi thao tác theo dự án phải qua
-  `ProjectPermissionService.requireRole/requireMember` (thực thi ở backend, không tin UI).
-- **Người dùng hiện tại:** controller lấy qua `SecurityUtils.currentUserId()` rồi **truyền
-  tường minh** `actorId` vào service (service không đọc SecurityContext → dễ test).
-- **Audit:** hành động quan trọng gọi `AuditService.record(...)` trong transaction.
-- **Entity:** kế thừa `BaseEntity` (UUID id, createdAt, updatedAt), `@Enumerated(EnumType.STRING)`,
-  soft delete bằng `deletedAt`; Lombok `@Getter/@Setter`; mapping entity ↔ DTO thủ công (không MapStruct).
-- **Javadoc:** mọi method public có Javadoc + dòng `@reference` trỏ tới mục tương ứng trong
-  `docs/plan-backend/03` (hoặc `docs/04`) — codebase hiện tại tuân thủ điều này.
-- **Ngôn ngữ:** identifier tiếng Anh; comment/Javadoc/message lỗi tiếng Việt.
-- **Config:** biến môi trường (`DB_URL`, `JWT_SECRET`, `MAIL_*`...), không commit secret.
+- **Layering:** `controller → service → repository → entity`. No business logic in controllers;
+  **never** return entities — always DTOs (`record`).
+- **Module dependency rules:** never access another module's repository (exception: `stats` reads
+  aggregate queries). Call other modules via their public services. Details: `docs/plan-backend/01` §4.2.
+- **Validation:** Jakarta annotations on DTOs (`@NotBlank`, `@Size`, `@Email`...); services re-check
+  business rules (uniqueness, permissions, state transitions...).
+- **Errors:** throw `AppException(ErrorCode, message)`; `GlobalExceptionHandler` renders the standard
+  format (`timestamp/status/code/message/path`). Services never throw other exception types.
+- **Authorization:** every project-scoped operation must go through
+  `ProjectPermissionService.requireRole/requireMember` (enforced on the backend — never trust the UI).
+- **Current user:** controllers read `SecurityUtils.currentUserId()` and pass `actorId`
+  **explicitly** into services (services never touch SecurityContext → easy to unit test).
+- **Audit:** important actions call `AuditService.record(...)` inside the transaction.
+- **Entities:** extend `BaseEntity` (UUID id, createdAt, updatedAt), `@Enumerated(EnumType.STRING)`,
+  soft delete via `deletedAt`; Lombok `@Getter/@Setter`; manual entity ↔ DTO mapping (no MapStruct).
+- **Javadoc:** every public method has Javadoc plus a `@reference` line pointing to the matching
+  section of `docs/plan-backend/03` (or `docs/04`) — the codebase currently follows this.
+- **Language:** English identifiers; Vietnamese comments/Javadoc/error messages.
+- **Config:** environment variables (`DB_URL`, `JWT_SECRET`, `MAIL_*`...); never commit secrets.
 
-## 6. Database & Migration
+## 6. Database & migrations
 
-- Bảng mới = file Flyway mới (`V3__*.sql`, `V4__*.sql`...). **Không** sửa file migration đã commit.
-- Khớp chính xác entity ↔ schema (đang `ddl-auto: validate`): kiểu cột, tên cột, NOT NULL.
-- Index cho các cột query nhiều (`project_id`, `deadline`, `user_id`...). Khoá ngoại tham chiếu
-  `users(id)`/`projects(id)` trong cùng DB.
+- A new table means a new Flyway file (`V3__*.sql`, `V4__*.sql`...). **Never** edit a migration that
+  is already committed.
+- Entity ↔ schema must match exactly (`ddl-auto: validate`): column types, names, NOT NULL.
+- Add indexes for heavily queried columns (`project_id`, `deadline`, `user_id`...). Foreign keys
+  reference `users(id)`/`projects(id)` in the same database.
 
-## 7. Test (bắt buộc)
+## 7. Testing (mandatory)
 
-- Unit test service bằng **Mockito** cho mọi luật nghiệp vụ (phân quyền, validate, idempotent...).
-- Integration test `@SpringBootTest` + MockMvc + **Testcontainers PostgreSQL**:
-  `@Testcontainers(disabledWithoutDocker = true)` — tự skip khi không có Docker, CI vẫn chạy.
-- Trước khi xong việc: `cd backend && ./mvnw test` phải **xanh**. Thay đổi API → cập nhật/Thêm test.
+- Unit test services with **Mockito** for every business rule (authorization, validation,
+  idempotency...).
+- Integration tests use `@SpringBootTest` + MockMvc + **Testcontainers PostgreSQL**:
+  `@Testcontainers(disabledWithoutDocker = true)` — self-skips without Docker; CI still runs them.
+- Before you are done: `cd backend && ./mvnw test` must be **green**. API changes require
+  updated/new tests.
 
-## 8. Lệnh chính
+## 8. Main commands
 
 ```bash
 cd backend
-./mvnw clean verify        # build + toàn bộ test
-./mvnw test                # chỉ test
-./mvnw spring-boot:run     # chạy local (cần PostgreSQL)
+./mvnw clean verify        # build + all tests
+./mvnw test                # tests only
+./mvnw spring-boot:run     # run locally (needs PostgreSQL)
+
+# local infrastructure (PostgreSQL + mailpit)
+docker compose -f infra/docker-compose.yml up -d
 ```
 
-CI: `.github/workflows/backend-ci.yml` chạy `./mvnw -B test` trên JDK 21 mỗi push/PR.
+CI: `.github/workflows/backend-ci.yml` runs `./mvnw -B test` on JDK 21 for every push/PR.
 
-## 9. Cách làm việc ở đây
+## 9. How to work here
 
-1. **Đọc trước khi viết.** Đọc tài liệu mục 4 + file sắp sửa. Không sửa file chưa đọc.
-2. **Bám plan.** Thứ tự triển khai: `docs/plan-backend/03` mục I (bước 1–2 ✅, tiếp theo là
-   module task). Yêu cầu trái plan/giải pháp bất thường → hỏi hoặc ghi rõ lý do.
-3. **Giữ scope chặt.** Chỉ làm phần được yêu cầu — không abstraction thừa, không refactor ngoài
-   phạm vi, không thêm cấu hình/hạ tầng mới khi chưa cần.
-4. **Validate trước khi báo xanh.** Build + test phải pass; sửa thứ mình làm hỏng.
-5. **Giữ `main` xanh.** Không commit build/test đỏ.
-6. **Commit:** Conventional Commits (`feat:`, `fix:`, `docs:`, `test:`...); không commit
-   `target/`, `uploads/`, secret.
+1. **Read before writing.** Read the docs from section 4 and the files you are about to change.
+2. **Follow the plan.** Implementation order: `docs/plan-backend/03` section I (steps 1–2 done,
+   next is the task module). Requests that contradict the plan → ask or state the reason.
+3. **Keep scope tight.** Only do what was asked — no speculative abstractions, no out-of-scope
+   refactors, no new infrastructure/config without a need.
+4. **Validate before declaring done.** Build + tests must pass; fix what you broke.
+5. **Keep `main` green.** Never commit a red build or failing tests.
+6. **Commits:** Conventional Commits (`feat:`, `fix:`, `docs:`, `test:`...); never commit `target/`,
+   `uploads/`, or secrets.
 
 ## 10. Anti-patterns
 
-- Bỏ qua `ProjectPermissionService` rồi query thẳng `project_members`.
-- Chỉ validate ở UI/DTO mà không kiểm tra luật ở service.
-- Trả entity từ controller, hoặc dùng `ddl-auto: update` thay vì Flyway.
-- Sửa/đổi file migration cũ đã commit.
-- Tách service thành microservice, thêm Redis/MinIO/Kafka "cho chuyên nghiệp".
-- Thêm lại chức năng đã bị cắt ở `docs/04` §1.2 khi chưa có quyết định mới.
-- Method public không có Javadoc/`@reference` (lệch chuẩn dự án).
-- Commit `.env`, `JWT_SECRET` thật, hoặc dữ liệu người dùng thật.
+- Bypassing `ProjectPermissionService` and querying `project_members` directly.
+- Validating only in the UI/DTO without checking business rules in the service.
+- Returning entities from controllers, or using `ddl-auto: update` instead of Flyway.
+- Editing/deleting an already-committed migration file.
+- Splitting services into microservices, adding Redis/MinIO/Kafka "to be professional".
+- Reintroducing features cut in `docs/04` §1.2 without a recorded decision.
+- Public methods without Javadoc/`@reference` (breaks the project standard).
+- Committing `.env`, a real `JWT_SECRET`, or real user data.

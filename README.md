@@ -34,8 +34,9 @@ MobileAppProject/
  ├─ docs/               # Tài liệu dự án (xem mục lục bên dưới)
  ├─ .github/workflows/  # CI: build + test backend
  ├─ .agents/skills/     # Kỹ năng hỗ trợ thiết kế mobile app
+ ├─ infra/              # docker-compose dev (PostgreSQL, mailpit)
  ├─ android/            # (sau) App Kotlin — Gradle project
- └─ infra/              # (sau) docker-compose, nginx
+ └─ .vscode/            # Cấu hình VSCode (JDK 21, extensions)
 ```
 
 ---
@@ -45,17 +46,16 @@ MobileAppProject/
 Yêu cầu: **JDK 21**, **Maven 3.9+** (hoặc dùng `./mvnw`), **PostgreSQL 16**, **Docker** (cho integration test).
 
 ```bash
-# 1. PostgreSQL
-docker run -d --name remoteapp-db -p 5432:5432 \
-  -e POSTGRES_DB=remoteapp -e POSTGRES_USER=remoteapp -e POSTGRES_PASSWORD=remoteapp \
-  postgres:16
+# 1. Hạ tầng local: PostgreSQL 16 + mailpit (cần Docker đang chạy)
+docker compose -f infra/docker-compose.yml up -d
 
-# 2. Chạy backend (profile mặc định đọc env DB_URL/DB_USERNAME/DB_PASSWORD/JWT_SECRET)
+# 2. Chạy backend (mặc định đọc env DB_URL/DB_USERNAME/DB_PASSWORD/JWT_SECRET)
 cd backend
 ./mvnw spring-boot:run
 
 # Swagger UI:  http://localhost:8080/swagger-ui.html
 # Health:      http://localhost:8080/actuator/health
+# Mailpit:     http://localhost:8025 (xem email quên mật khẩu khi dev)
 ```
 
 ## Build & Test
