@@ -221,7 +221,7 @@
 ```
 MobileAppProject/
  ├─ android/            # App Kotlin (Gradle project)
- ├─ backend/            # Spring Boot (Gradle project)
+ ├─ backend/            # Spring Boot (Maven project)
  ├─ docs/               # Tài liệu phân tích, kiến trúc, roadmap
  ├─ infra/              # docker-compose, nginx, coturn
  └─ README.md

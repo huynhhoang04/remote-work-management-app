@@ -1,0 +1,59 @@
+spring:
+  application:
+    name: remoteapp-backend
+
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/remoteapp}
+    username: ${DB_USERNAME:remoteapp}
+    password: ${DB_PASSWORD:remoteapp}
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+
+  flyway:
+    enabled: true
+
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 12MB
+
+  mail:
+    host: ${MAIL_HOST:localhost}
+    port: ${MAIL_PORT:1025}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+
+app:
+  jwt:
+    # Production: truyen qua bien moi truong JWT_SECRET (>= 32 ky tu)
+    secret: ${JWT_SECRET:dev-only-secret-change-me-0123456789abcdef}
+    access-token-minutes: 15
+    refresh-token-days: 30
+  auth:
+    reset-token-minutes: 30
+    login-max-attempts: 10
+    login-window-seconds: 60
+  upload:
+    dir: ${UPLOAD_DIR:uploads}
+
+server:
+  port: 8080
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
