@@ -1,0 +1,37 @@
+info:
+  name: 09 - Devices - Register FCM token
+  type: http
+  seq: 9
+  tags:
+  - devices
+http:
+  method: POST
+  url: "{{baseUrl}}/api/v1/devices/token"
+  headers:
+  - name: Content-Type
+    value: application/json
+  - name: Authorization
+    value: "Bearer {{tokenA}}"
+  auth: inherit
+  body:
+    type: json
+    data: |-
+      {
+        "fcmToken": "{{inputFcmToken}}",
+        "platform": "ANDROID"
+      }
+runtime:
+  scripts:
+  - type: tests
+    code: |
+      test("HTTP 204 expected", function () {
+        expect(res.status).to.equal(204);
+      });
+settings:
+  encodeUrl: true
+  timeout: 30000
+  followRedirects: true
+  maxRedirects: 5
+docs: |-
+  SIDE EFFECT: upsert device token cho tài khoản A (unique theo token) — nền cho push notification.
+  {{inputFcmToken}} do bạn nhập ở environment (không script nào tự điền).

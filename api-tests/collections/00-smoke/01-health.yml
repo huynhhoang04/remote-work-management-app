@@ -1,0 +1,28 @@
+info:
+  name: 01 - Health
+  type: http
+  seq: 1
+  tags:
+  - smoke
+http:
+  method: GET
+  url: "{{baseUrl}}/actuator/health"
+  auth: inherit
+runtime:
+  scripts:
+  - type: tests
+    code: |
+      test("HTTP 200 expected", function () {
+        expect(res.status).to.equal(200);
+      });
+      test("trạng thái UP", function () {
+        expect(res.body.status).to.equal("UP");
+      });
+settings:
+  encodeUrl: true
+  timeout: 60000
+  followRedirects: true
+  maxRedirects: 5
+docs: |-
+  Read-only. Render free ngủ sau ~15 phút: lần gọi đầu có thể 30-60s (timeout đặt 60s).
+  Endpoint này là health check của Render — phải UP thì service mới được coi là deploy thành công.

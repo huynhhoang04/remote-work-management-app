@@ -1,0 +1,44 @@
+info:
+  name: 15 - Invites - Create link
+  type: http
+  seq: 15
+  tags:
+  - invites
+http:
+  method: POST
+  url: "{{baseUrl}}/api/v1/projects/{{projectId}}/invites"
+  headers:
+  - name: Content-Type
+    value: application/json
+  - name: Authorization
+    value: "Bearer {{tokenA}}"
+  auth: inherit
+  body:
+    type: json
+    data: |-
+      {}
+runtime:
+  scripts:
+  - type: after-response
+    code: |
+      // Bắt mã mời trả về — nếu bạn đã điền {{inviteCode}} trong environment thì giữ nguyên giá trị của bạn.
+      if (!bru.getEnvVar("inviteCode") && res.body && res.body.code) bru.setVar("inviteCode", res.body.code);
+  - type: tests
+    code: |
+      test("HTTP 201 expected", function () {
+        expect(res.status).to.equal(201);
+      });
+      test("mã mời đúng định dạng 12 ký tự [A-Z0-9]", function () {
+        expect(res.body.code).to.match(/^[A-Z0-9]{12}$/);
+      });
+      test("có deep-link để chia sẻ", function () {
+        expect(res.body.inviteUrl).to.contain(res.body.code);
+      });
+settings:
+  encodeUrl: true
+  timeout: 30000
+  followRedirects: true
+  maxRedirects: 5
+docs: |-
+  SIDE EFFECT: tạo link mời cho dự án (Owner/Admin của dự án đó). Mã mời dùng ở request 16.
+  Body rỗng = link không hết hạn; có thể truyền {"expiresAt": "2026-12-31T00:00:00Z"} để giới hạn.

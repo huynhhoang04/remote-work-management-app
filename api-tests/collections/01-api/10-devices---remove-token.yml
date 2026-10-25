@@ -1,0 +1,36 @@
+info:
+  name: 10 - Devices - Remove FCM token
+  type: http
+  seq: 10
+  tags:
+  - devices
+http:
+  method: DELETE
+  url: "{{baseUrl}}/api/v1/devices/token"
+  headers:
+  - name: Content-Type
+    value: application/json
+  - name: Authorization
+    value: "Bearer {{tokenA}}"
+  auth: inherit
+  body:
+    type: json
+    data: |-
+      {
+        "fcmToken": "{{inputFcmToken}}"
+      }
+runtime:
+  scripts:
+  - type: tests
+    code: |
+      test("HTTP 204 expected", function () {
+        expect(res.status).to.equal(204);
+      });
+settings:
+  encodeUrl: true
+  timeout: 30000
+  followRedirects: true
+  maxRedirects: 5
+docs: |-
+  SIDE EFFECT: xoá device token khỏi DB (dùng khi logout / token hỏng).
+  Dùng đúng {{inputFcmToken}} bạn đã đăng ký ở request 09.

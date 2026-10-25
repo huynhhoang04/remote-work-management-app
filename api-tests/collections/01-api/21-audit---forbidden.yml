@@ -1,0 +1,32 @@
+info:
+  name: 21 - Audit - List forbidden (VIEWER)
+  type: http
+  seq: 21
+  tags:
+  - audit
+  - rbac
+  - negative
+http:
+  method: GET
+  url: "{{baseUrl}}/api/v1/projects/{{projectId}}/audit-logs?page=0&size=10"
+  headers:
+  - name: Authorization
+    value: "Bearer {{tokenB}}"
+  auth: inherit
+runtime:
+  scripts:
+  - type: tests
+    code: |
+      test("HTTP 403 expected", function () {
+        expect(res.status).to.equal(403);
+      });
+      test("mã lỗi PROJECT_FORBIDDEN", function () {
+        expect(res.body.code).to.equal("PROJECT_FORBIDDEN");
+      });
+settings:
+  encodeUrl: true
+  timeout: 30000
+  followRedirects: true
+  maxRedirects: 5
+docs: |-
+  Read-only, negative test: B là VIEWER trong dự án của A nên không xem được audit log.

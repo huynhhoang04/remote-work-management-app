@@ -1,0 +1,34 @@
+info:
+  name: 05 - Users - Me (account A)
+  type: http
+  seq: 5
+  tags:
+  - users
+http:
+  method: GET
+  url: "{{baseUrl}}/api/v1/users/me"
+  headers:
+  - name: Authorization
+    value: "Bearer {{tokenA}}"
+  auth: inherit
+runtime:
+  scripts:
+  - type: tests
+    code: |
+      test("HTTP 200 expected", function () {
+        expect(res.status).to.equal(200);
+      });
+      test("trả về hồ sơ của chính mình", function () {
+        expect(res.body.email).to.equal(bru.getEnvVar("inputEmailA"));
+      });
+      test("không lộ mật khẩu", function () {
+        expect(res.body.passwordHash).to.equal(undefined);
+      });
+settings:
+  encodeUrl: true
+  timeout: 30000
+  followRedirects: true
+  maxRedirects: 5
+docs: |-
+  Read-only. Cần {{tokenA}} từ request 03. Hồ sơ KHÔNG chứa vai trò — vai trò nằm ở
+  thành viên dự án (xem response của request 14/26).

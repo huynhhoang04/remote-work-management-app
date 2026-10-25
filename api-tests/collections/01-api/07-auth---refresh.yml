@@ -1,0 +1,53 @@
+info:
+  name: 07 - Auth - Refresh (rotate)
+  type: http
+  seq: 7
+  tags:
+  - auth
+http:
+  method: POST
+  url: "{{baseUrl}}/api/v1/auth/refresh"
+  headers:
+  - name: Content-Type
+    value: application/json
+  auth: inherit
+  body:
+    type: json
+    data: |-
+      {
+        "refreshToken": "{{refreshTokenA}}"
+      }
+runtime:
+  scripts:
+  - type: before-request
+    code: |
+      let current = null;
+      try { current = bru.getVar("refreshTokenA"); } catch (e) {}
+      if (!current) current = bru.getEnvVar("refreshTokenA");
+      if (!current) {
+        throw new Error("Missing runtime variable 'refreshTokenA'. Chạy request 03 (login user A) trước.");
+      }
+      bru.setVar("refreshTokenABefore", current);
+  - type: after-response
+    code: |
+      if (res.body && res.body.accessToken) bru.setVar("tokenA", res.body.accessToken);
+      if (res.body && res.body.refreshToken) bru.setVar("refreshTokenA", res.body.refreshToken);
+  - type: tests
+    code: |
+      test("HTTP 200 expected", function () {
+        expect(res.status).to.equal(200);
+      });
+      test("refresh token được xoay vòng (khác token cũ)", function () {
+        expect(res.body.refreshToken).to.not.equal(bru.getVar("refreshTokenABefore"));
+      });
+      test("access token mới được cấp", function () {
+        expect(res.body.accessToken).to.be.a("string");
+      });
+settings:
+  encodeUrl: true
+  timeout: 30000
+  followRedirects: true
+  maxRedirects: 5
+docs: |-
+  SIDE EFFECT: thu hồi refresh token cũ + cấp cặp token mới (rotate) — đúng luật plan §A2.
+  {{refreshTokenA}} đổi giá trị sau request này; chạy lại request 07 một mình sẽ dùng token mới nhất.

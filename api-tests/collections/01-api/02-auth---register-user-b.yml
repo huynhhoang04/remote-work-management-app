@@ -1,0 +1,39 @@
+info:
+  name: 02 - Auth - Register user B
+  type: http
+  seq: 2
+  tags:
+  - auth
+http:
+  method: POST
+  url: "{{baseUrl}}/api/v1/auth/register"
+  headers:
+  - name: Content-Type
+    value: application/json
+  auth: inherit
+  body:
+    type: json
+    data: |-
+      {
+        "email": "{{inputEmailB}}",
+        "password": "{{inputPasswordB}}",
+        "fullName": "User B"
+      }
+runtime:
+  scripts:
+  - type: tests
+    code: |
+      test("HTTP 201 expected", function () {
+        expect(res.status).to.equal(201);
+      });
+      test("trả về đúng email đã đăng ký", function () {
+        expect(res.body.email).to.equal(bru.getEnvVar("inputEmailB"));
+      });
+settings:
+  encodeUrl: true
+  timeout: 30000
+  followRedirects: true
+  maxRedirects: 5
+docs: |-
+  SIDE EFFECT: tạo tài khoản thứ hai — cần cho luồng nhiều người (link mời, join, kiểm tra 403).
+  Giá trị lấy từ environment do bạn nhập; request không tự sửa biến.

@@ -1,0 +1,48 @@
+info:
+  name: 03 - Auth - Login user A
+  type: http
+  seq: 3
+  tags:
+  - auth
+http:
+  method: POST
+  url: "{{baseUrl}}/api/v1/auth/login"
+  headers:
+  - name: Content-Type
+    value: application/json
+  auth: inherit
+  body:
+    type: json
+    data: |-
+      {
+        "email": "{{inputEmailA}}",
+        "password": "{{inputPasswordA}}"
+      }
+runtime:
+  scripts:
+  - type: after-response
+    code: |
+      // Chỉ bắt KẾT QUẢ trả về (không đụng vào biến đầu vào của bạn).
+      if (res.body && res.body.accessToken) bru.setVar("tokenA", res.body.accessToken);
+      if (res.body && res.body.refreshToken) bru.setVar("refreshTokenA", res.body.refreshToken);
+      if (res.body && res.body.user && res.body.user.id) bru.setVar("userAId", res.body.user.id);
+  - type: tests
+    code: |
+      test("HTTP 200 expected", function () {
+        expect(res.status).to.equal(200);
+      });
+      test("cặp token được cấp", function () {
+        expect(res.body.accessToken).to.be.a("string");
+        expect(res.body.refreshToken).to.be.a("string");
+      });
+      test("đúng tài khoản A", function () {
+        expect(res.body.user.email).to.equal(bru.getEnvVar("inputEmailA"));
+      });
+settings:
+  encodeUrl: true
+  timeout: 30000
+  followRedirects: true
+  maxRedirects: 5
+docs: |-
+  Token trả về được bắt vào {{tokenA}} / {{refreshTokenA}} (chỉ đọc — đây là KẾT QUẢ, không phải input).
+  Email/mật khẩu lấy từ environment do bạn nhập. Sai mật khẩu bị kiểm ở request 25 (401).

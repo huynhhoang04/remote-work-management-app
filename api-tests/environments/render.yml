@@ -1,0 +1,5 @@
+name: render
+variables:
+  - name: baseUrl
+    value: https://remoteapp-backend.onrender.com
+    description: URL công khai của backend trên Render — đổi theo đúng tên service (Render → service → URL). Free tier ngủ sau ~15 phút, request đầu có thể mất 30-60s.

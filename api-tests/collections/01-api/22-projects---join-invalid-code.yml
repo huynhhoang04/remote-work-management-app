@@ -1,0 +1,39 @@
+info:
+  name: 22 - Projects - Join invalid code
+  type: http
+  seq: 22
+  tags:
+  - projects
+  - negative
+http:
+  method: POST
+  url: "{{baseUrl}}/api/v1/projects/join"
+  headers:
+  - name: Content-Type
+    value: application/json
+  - name: Authorization
+    value: "Bearer {{tokenB}}"
+  auth: inherit
+  body:
+    type: json
+    data: |-
+      {
+        "code": "NOTEXIST1234"
+      }
+runtime:
+  scripts:
+  - type: tests
+    code: |
+      test("HTTP 400 expected", function () {
+        expect(res.status).to.equal(400);
+      });
+      test("mã lỗi INVITE_INVALID", function () {
+        expect(res.body.code).to.equal("INVITE_INVALID");
+      });
+settings:
+  encodeUrl: true
+  timeout: 30000
+  followRedirects: true
+  maxRedirects: 5
+docs: |-
+  Negative test cho validate: mã mời sai bị từ chối trước khi ghi DB (không có side effect).

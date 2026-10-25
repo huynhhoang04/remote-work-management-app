@@ -1,0 +1,46 @@
+info:
+  name: 04 - Auth - Login user B
+  type: http
+  seq: 4
+  tags:
+  - auth
+http:
+  method: POST
+  url: "{{baseUrl}}/api/v1/auth/login"
+  headers:
+  - name: Content-Type
+    value: application/json
+  auth: inherit
+  body:
+    type: json
+    data: |-
+      {
+        "email": "{{inputEmailB}}",
+        "password": "{{inputPasswordB}}"
+      }
+runtime:
+  scripts:
+  - type: after-response
+    code: |
+      if (res.body && res.body.accessToken) bru.setVar("tokenB", res.body.accessToken);
+      if (res.body && res.body.refreshToken) bru.setVar("refreshTokenB", res.body.refreshToken);
+      if (res.body && res.body.user && res.body.user.id) bru.setVar("userBId", res.body.user.id);
+  - type: tests
+    code: |
+      test("HTTP 200 expected", function () {
+        expect(res.status).to.equal(200);
+      });
+      test("cặp token được cấp", function () {
+        expect(res.body.accessToken).to.be.a("string");
+      });
+      test("đúng tài khoản B", function () {
+        expect(res.body.user.email).to.equal(bru.getEnvVar("inputEmailB"));
+      });
+settings:
+  encodeUrl: true
+  timeout: 30000
+  followRedirects: true
+  maxRedirects: 5
+docs: |-
+  Token B được bắt vào {{tokenB}} / {{userBId}} — dùng cho join dự án (16), kiểm tra 403 (19/21)
+  và chứng minh B là OWNER ở dự án riêng (26). Email/mật khẩu lấy từ environment do bạn nhập.

@@ -1,0 +1,28 @@
+info:
+  name: 02 - Users me unauthorized
+  type: http
+  seq: 2
+  tags:
+  - smoke
+  - negative
+http:
+  method: GET
+  url: "{{baseUrl}}/api/v1/users/me"
+  auth: inherit
+runtime:
+  scripts:
+  - type: tests
+    code: |
+      test("HTTP 401 expected", function () {
+        expect(res.status).to.equal(401);
+      });
+      test("mã lỗi AUTH_UNAUTHORIZED", function () {
+        expect(res.body.code).to.equal("AUTH_UNAUTHORIZED");
+      });
+settings:
+  encodeUrl: true
+  timeout: 60000
+  followRedirects: true
+  maxRedirects: 5
+docs: |-
+  Read-only, không ghi dữ liệu — dùng để kiểm tra nhanh sau deploy rằng API + filter JWT hoạt động.

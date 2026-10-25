@@ -1,0 +1,38 @@
+info:
+  name: 20 - Audit - List project logs (owner)
+  type: http
+  seq: 20
+  tags:
+  - audit
+http:
+  method: GET
+  url: "{{baseUrl}}/api/v1/projects/{{projectId}}/audit-logs?page=0&size=50"
+  headers:
+  - name: Authorization
+    value: "Bearer {{tokenA}}"
+  auth: inherit
+runtime:
+  scripts:
+  - type: tests
+    code: |
+      test("HTTP 200 expected", function () {
+        expect(res.status).to.equal(200);
+      });
+      test("có bản ghi audit", function () {
+        expect(res.body.content.length).to.be.at.least(1);
+      });
+      test("ghi nhận hành động tạo dự án", function () {
+        const actions = res.body.content.map(function (entry) { return entry.action; });
+        expect(actions).to.contain("PROJECT_CREATED");
+      });
+      test("ghi nhận thành viên join qua link mời", function () {
+        const actions = res.body.content.map(function (entry) { return entry.action; });
+        expect(actions).to.contain("MEMBER_JOINED");
+      });
+settings:
+  encodeUrl: true
+  timeout: 30000
+  followRedirects: true
+  maxRedirects: 5
+docs: |-
+  Read-only. Chỉ OWNER của dự án xem được audit log (FR-G05); VIEWER bị 403 ở request 21.

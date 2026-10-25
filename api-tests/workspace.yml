@@ -1,0 +1,16 @@
+opencollection: 1.0.0
+info:
+  name: "Remote Work Management API"
+  type: workspace
+
+collections:
+  - name: "00 - Smoke (deployed)"
+    path: "collections/00-smoke"
+  - name: "01 - Remote Work API (REST)"
+    path: "collections/01-api"
+  - name: "02 - Auth reset (manual)"
+    path: "collections/02-auth-reset"
+
+specs:
+
+docs: "README.md"

@@ -1,0 +1,48 @@
+info:
+  name: 16 - Projects - Join by invite code (account B)
+  type: http
+  seq: 16
+  tags:
+  - projects
+http:
+  method: POST
+  url: "{{baseUrl}}/api/v1/projects/join"
+  headers:
+  - name: Content-Type
+    value: application/json
+  - name: Authorization
+    value: "Bearer {{tokenB}}"
+  auth: inherit
+  body:
+    type: json
+    data: |-
+      {
+        "code": "{{inviteCode}}"
+      }
+runtime:
+  scripts:
+  - type: tests
+    code: |
+      function readVar(name) {
+        try { const v = bru.getVar(name); if (v) return v; } catch (e) {}
+        return bru.getEnvVar(name);
+      }
+
+      test("HTTP 200 expected", function () {
+        expect(res.status).to.equal(200);
+      });
+      test("B được thêm vào dự án với vai trò MEMBER", function () {
+        expect(res.body.role).to.equal("MEMBER");
+      });
+      test("đúng dự án được mời", function () {
+        expect(res.body.id).to.equal(readVar("projectId"));
+      });
+settings:
+  encodeUrl: true
+  timeout: 30000
+  followRedirects: true
+  maxRedirects: 5
+docs: |-
+  SIDE EFFECT: thêm tài khoản B vào dự án của A (idempotent — gửi lại vẫn 200).
+  Vai trò MEMBER ở đây là vai trò của B TRONG DỰ ÁN NÀY, không phải thuộc tính của tài khoản B.
+  Mã mời sai được kiểm ở request 22.

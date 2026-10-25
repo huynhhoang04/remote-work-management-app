@@ -1,0 +1,39 @@
+info:
+  name: 14 - Projects - Get detail
+  type: http
+  seq: 14
+  tags:
+  - projects
+http:
+  method: GET
+  url: "{{baseUrl}}/api/v1/projects/{{projectId}}"
+  headers:
+  - name: Authorization
+    value: "Bearer {{tokenA}}"
+  auth: inherit
+runtime:
+  scripts:
+  - type: tests
+    code: |
+      function readVar(name) {
+        try { const v = bru.getVar(name); if (v) return v; } catch (e) {}
+        return bru.getEnvVar(name);
+      }
+
+      test("HTTP 200 expected", function () {
+        expect(res.status).to.equal(200);
+      });
+      test("đúng dự án đang test", function () {
+        expect(res.body.id).to.equal(readVar("projectId"));
+      });
+      test("vai trò của A trong dự án này là OWNER", function () {
+        expect(res.body.role).to.equal("OWNER");
+      });
+settings:
+  encodeUrl: true
+  timeout: 30000
+  followRedirects: true
+  maxRedirects: 5
+docs: |-
+  Read-only. Cần {{projectId}} từ request 12. Cùng request này chạy bằng {{tokenB}} (sau request 16)
+  sẽ trả về role MEMBER/VIEWER — chứng minh vai trò gắn với dự án, không gắn với tài khoản.

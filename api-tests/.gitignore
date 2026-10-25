@@ -1,0 +1,14 @@
+# Local secrets and environment overrides - never commit these
+.env*
+*.local.yml
+*.local.bru
+
+# Dependencies
+node_modules
+
+# Bruno CLI reports
+reports/
+
+# OS files
+.DS_Store
+Thumbs.db

@@ -1,0 +1,50 @@
+info:
+  name: 26 - Projects - Create by account B (roles are per-project)
+  type: http
+  seq: 26
+  tags:
+  - projects
+  - rbac
+http:
+  method: POST
+  url: "{{baseUrl}}/api/v1/projects"
+  headers:
+  - name: Content-Type
+    value: application/json
+  - name: Authorization
+    value: "Bearer {{tokenB}}"
+  auth: inherit
+  body:
+    type: json
+    data: |-
+      {
+        "name": "Du an rieng cua B (Bruno)",
+        "description": "Chung minh vai tro gan voi du an, khong gan voi tai khoan"
+      }
+runtime:
+  scripts:
+  - type: after-response
+    code: |
+      // Bắt ID trả về — nếu bạn đã điền {{projectBId}} trong environment thì giữ nguyên giá trị của bạn.
+      if (!bru.getEnvVar("projectBId") && res.body && res.body.id) bru.setVar("projectBId", res.body.id);
+  - type: tests
+    code: |
+      test("HTTP 201 expected", function () {
+        expect(res.status).to.equal(201);
+      });
+      test("CÙNG tài khoản B là OWNER ở dự án của chính B", function () {
+        expect(res.body.role).to.equal("OWNER");
+      });
+      test("trả về id dự án của B", function () {
+        expect(res.body.id).to.be.a("string");
+      });
+settings:
+  encodeUrl: true
+  timeout: 30000
+  followRedirects: true
+  maxRedirects: 5
+docs: |-
+  SIDE EFFECT: tạo dự án thứ hai, do tài khoản B làm OWNER.
+  Trả lời cho "member của dự án này là owner của dự án khác thì sao": KHÔNG cần đăng ký tài khoản mới —
+  B vừa là OWNER ở dự án của B, vừa là VIEWER ở dự án của A (request 18/19).
+  Vai trò luôn xác định theo (dự án, tài khoản), không theo tài khoản.

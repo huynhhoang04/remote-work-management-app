@@ -1,0 +1,41 @@
+info:
+  name: 19 - Projects - Update forbidden (VIEWER)
+  type: http
+  seq: 19
+  tags:
+  - projects
+  - rbac
+  - negative
+http:
+  method: PATCH
+  url: "{{baseUrl}}/api/v1/projects/{{projectId}}"
+  headers:
+  - name: Content-Type
+    value: application/json
+  - name: Authorization
+    value: "Bearer {{tokenB}}"
+  auth: inherit
+  body:
+    type: json
+    data: |-
+      {
+        "name": "Ten bi doi trai phep"
+      }
+runtime:
+  scripts:
+  - type: tests
+    code: |
+      test("HTTP 403 expected", function () {
+        expect(res.status).to.equal(403);
+      });
+      test("mã lỗi PROJECT_FORBIDDEN", function () {
+        expect(res.body.code).to.equal("PROJECT_FORBIDDEN");
+      });
+settings:
+  encodeUrl: true
+  timeout: 30000
+  followRedirects: true
+  maxRedirects: 5
+docs: |-
+  Negative test cho RBAC: B là VIEWER trong dự án của A (sau request 18) nên không sửa được dự án.
+  Chú ý: quyền được xét theo vai trò của B trong DỰ ÁN NÀY, không theo tài khoản.

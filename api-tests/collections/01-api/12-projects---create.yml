@@ -1,0 +1,49 @@
+info:
+  name: 12 - Projects - Create (account A)
+  type: http
+  seq: 12
+  tags:
+  - projects
+http:
+  method: POST
+  url: "{{baseUrl}}/api/v1/projects"
+  headers:
+  - name: Content-Type
+    value: application/json
+  - name: Authorization
+    value: "Bearer {{tokenA}}"
+  auth: inherit
+  body:
+    type: json
+    data: |-
+      {
+        "name": "Do an Mobile (Bruno)",
+        "description": "Dự án tạo bởi bộ test API"
+      }
+runtime:
+  scripts:
+  - type: after-response
+    code: |
+      // Bắt ID trả về — nhưng nếu bạn đã điền {{projectId}} trong environment thì giữ nguyên giá trị của bạn.
+      if (!bru.getEnvVar("projectId") && res.body && res.body.id) bru.setVar("projectId", res.body.id);
+  - type: tests
+    code: |
+      test("HTTP 201 expected", function () {
+        expect(res.status).to.equal(201);
+      });
+      test("người tạo có vai trò OWNER trong dự án này", function () {
+        expect(res.body.role).to.equal("OWNER");
+      });
+      test("trả về id dự án", function () {
+        expect(res.body.id).to.be.a("string");
+      });
+settings:
+  encodeUrl: true
+  timeout: 30000
+  followRedirects: true
+  maxRedirects: 5
+docs: |-
+  SIDE EFFECT: tạo dự án; người tạo trở thành OWNER + thành viên của DỰ ÁN NÀY.
+  Vai trò không thuộc tài khoản: cùng tài khoản A vẫn có thể là MEMBER/VIEWER ở dự án khác,
+  và tài khoản B là OWNER ở dự án do B tạo (request 26).
+  API chưa có idempotency key — chạy tay, không runner hàng loạt.

@@ -1,0 +1,42 @@
+info:
+  name: 13 - Projects - List
+  type: http
+  seq: 13
+  tags:
+  - projects
+http:
+  method: GET
+  url: "{{baseUrl}}/api/v1/projects"
+  headers:
+  - name: Authorization
+    value: "Bearer {{tokenA}}"
+  auth: inherit
+runtime:
+  scripts:
+  - type: tests
+    code: |
+      function readVar(name) {
+        try { const v = bru.getVar(name); if (v) return v; } catch (e) {}
+        return bru.getEnvVar(name);
+      }
+
+      test("HTTP 200 expected", function () {
+        expect(res.status).to.equal(200);
+      });
+      test("chứa dự án vừa tạo", function () {
+        const projectId = readVar("projectId");
+        expect(res.body.some(function (p) { return p.id === projectId; })).to.equal(true);
+      });
+      test("vai trò trả về theo từng dự án", function () {
+        const projectId = readVar("projectId");
+        const row = res.body.filter(function (p) { return p.id === projectId; })[0];
+        expect(row.role).to.equal("OWNER");
+      });
+settings:
+  encodeUrl: true
+  timeout: 30000
+  followRedirects: true
+  maxRedirects: 5
+docs: |-
+  Read-only. Danh sách dự án mà tài khoản A là thành viên — mỗi dòng mang vai trò RIÊNG của
+  tài khoản đó trong dự án ấy (không phải vai trò toàn cục).

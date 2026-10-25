@@ -1,0 +1,40 @@
+info:
+  name: 01 - Auth - Register user A
+  type: http
+  seq: 1
+  tags:
+  - auth
+http:
+  method: POST
+  url: "{{baseUrl}}/api/v1/auth/register"
+  headers:
+  - name: Content-Type
+    value: application/json
+  auth: inherit
+  body:
+    type: json
+    data: |-
+      {
+        "email": "{{inputEmailA}}",
+        "password": "{{inputPasswordA}}",
+        "fullName": "hoangf van Huynh"
+      }
+runtime:
+  scripts:
+  - type: tests
+    code: |
+      test("HTTP 201 expected", function () {
+        expect(res.status).to.equal(201);
+      });
+      test("trả về đúng email đã đăng ký", function () {
+        expect(res.body.email).to.equal(bru.getEnvVar("inputEmailA"));
+      });
+settings:
+  encodeUrl: true
+  timeout: 30000
+  followRedirects: true
+  maxRedirects: 5
+docs: |-
+  SIDE EFFECT: tạo tài khoản. Mọi giá trị lấy từ environment do BẠN nhập — request KHÔNG tự ghi/sửa biến nào
+  (trước đây có script tự sinh email/password nên Bruno đánh dấu biến là Runtime/read-only; đã bỏ).
+  Tài khoản không mang vai trò (vai trò thuộc dự án). Chạy lại cả collection cần email mới hoặc DB sạch.

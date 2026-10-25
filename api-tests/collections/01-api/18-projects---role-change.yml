@@ -1,0 +1,37 @@
+info:
+  name: 18 - Projects - Change member role
+  type: http
+  seq: 18
+  tags:
+  - projects
+  - rbac
+http:
+  method: PATCH
+  url: "{{baseUrl}}/api/v1/projects/{{projectId}}/members/{{userBId}}"
+  headers:
+  - name: Content-Type
+    value: application/json
+  - name: Authorization
+    value: "Bearer {{tokenA}}"
+  auth: inherit
+  body:
+    type: json
+    data: |-
+      {
+        "role": "VIEWER"
+      }
+runtime:
+  scripts:
+  - type: tests
+    code: |
+      test("HTTP 204 expected", function () {
+        expect(res.status).to.equal(204);
+      });
+settings:
+  encodeUrl: true
+  timeout: 30000
+  followRedirects: true
+  maxRedirects: 5
+docs: |-
+  SIDE EFFECT: A (OWNER) đổi vai trò của B trong DỰ ÁN NÀY thành VIEWER. Hiệu lực ngay vì vai trò
+  đọc từ DB mỗi request, không nhồi vào JWT. Vai trò của B ở dự án khác không bị ảnh hưởng (request 26).
