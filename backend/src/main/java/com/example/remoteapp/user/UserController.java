@@ -5,11 +5,9 @@ import com.example.remoteapp.user.dto.UpdateProfileRequest;
 import com.example.remoteapp.user.dto.UserResponse;
 import jakarta.validation.Valid;
 import java.util.UUID;
-import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
-import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -24,10 +22,19 @@ import org.springframework.web.bind.annotation.RestController;
  */
 @RestController
 @RequestMapping("/api/v1")
-@RequiredArgsConstructor
 public class UserController {
 
     private final UserService userService;
+
+    /**
+     * Khởi tạo controller (constructor injection tường minh).
+     *
+     * @param userService service hồ sơ người dùng
+     * @reference docs/plan-backend/01-kien-truc-va-stack.md §4.1
+     */
+    public UserController(UserService userService) {
+        this.userService = userService;
+    }
 
     /**
      * Xem hồ sơ của người dùng đang đăng nhập (FR-A04).

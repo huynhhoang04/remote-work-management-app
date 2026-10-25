@@ -28,9 +28,10 @@ import com.example.remoteapp.user.dto.UserResponse;
 import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mail.SimpleMailMessage;
@@ -60,10 +61,16 @@ class AuthServiceTest {
     @Mock
     private AuditService auditService;
 
-    @InjectMocks
     private AuthService authService;
 
     private static final String RAW_PASSWORD = "secret-password-1";
+    private static final String MAIL_FROM = "no-reply@test.local";
+
+    @BeforeEach
+    void setUp() {
+        authService = new AuthService(userRepository, passwordEncoder, jwtService, tokenService,
+                loginRateLimiter, mailSender, auditService, MAIL_FROM);
+    }
 
     private User activeUser() {
         User user = new User();
@@ -242,7 +249,10 @@ class AuthServiceTest {
 
         authService.forgotPassword(new ForgotPasswordRequest("user@example.com"));
 
-        verify(mailSender).send(any(SimpleMailMessage.class));
+        ArgumentCaptor<SimpleMailMessage> captor = ArgumentCaptor.forClass(SimpleMailMessage.class);
+        verify(mailSender).send(captor.capture());
+        assertThat(captor.getValue().getFrom()).isEqualTo(MAIL_FROM);
+        assertThat(captor.getValue().getTo()).containsExactly("user@example.com");
     }
 
     /** @reference docs/plan-backend/03-chuc-nang-dac-ta-va-implementation.md §A3 */

@@ -17,8 +17,8 @@ import com.example.remoteapp.user.UserStatus;
 import com.example.remoteapp.user.dto.UserResponse;
 import java.util.Locale;
 import java.util.UUID;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -33,7 +33,6 @@ import org.springframework.transaction.annotation.Transactional;
  */
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class AuthService {
 
     private static final String RESET_LINK_FORMAT = "app://reset?token=%s";
@@ -46,6 +45,34 @@ public class AuthService {
     private final LoginRateLimiter loginRateLimiter;
     private final JavaMailSender mailSender;
     private final AuditService auditService;
+    private final String mailFrom;
+
+    /**
+     * Khởi tạo service (constructor injection tường minh — plan 01 §4.1).
+     *
+     * @param userRepository   repository người dùng
+     * @param passwordEncoder  mã hoá/kiểm tra mật khẩu (BCrypt)
+     * @param jwtService       phát hành access token
+     * @param tokenService     quản lý refresh token / reset token
+     * @param loginRateLimiter giới hạn số lần đăng nhập
+     * @param mailSender       gửi email đặt lại mật khẩu
+     * @param auditService     ghi audit log
+     * @param mailFrom         địa chỉ From của email hệ thống (app.mail.from)
+     * @reference docs/plan-backend/01-kien-truc-va-stack.md §4.1
+     */
+    public AuthService(UserRepository userRepository, PasswordEncoder passwordEncoder, JwtService jwtService,
+                       TokenService tokenService, LoginRateLimiter loginRateLimiter, JavaMailSender mailSender,
+                       AuditService auditService,
+                       @Value("${app.mail.from:no-reply@remoteapp.local}") String mailFrom) {
+        this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
+        this.jwtService = jwtService;
+        this.tokenService = tokenService;
+        this.loginRateLimiter = loginRateLimiter;
+        this.mailSender = mailSender;
+        this.auditService = auditService;
+        this.mailFrom = mailFrom;
+    }
 
     /**
      * Đăng ký tài khoản mới (FR-A01).
@@ -191,6 +218,7 @@ public class AuthService {
     private void sendResetEmail(User user) {
         String rawToken = tokenService.createPasswordResetToken(user.getId());
         SimpleMailMessage message = new SimpleMailMessage();
+        message.setFrom(mailFrom);
         message.setTo(user.getEmail());
         message.setSubject("Đặt lại mật khẩu");
         message.setText("Nhấn vào link sau để đặt lại mật khẩu (hiệu lực 30 phút):\n"

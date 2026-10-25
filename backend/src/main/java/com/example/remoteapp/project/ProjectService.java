@@ -16,7 +16,6 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -28,7 +27,6 @@ import org.springframework.transaction.annotation.Transactional;
  * @reference docs/plan-backend/03-chuc-nang-dac-ta-va-implementation.md §B1, §B2
  */
 @Service
-@RequiredArgsConstructor
 public class ProjectService {
 
     private static final String ENTITY_TYPE = "PROJECT";
@@ -38,6 +36,26 @@ public class ProjectService {
     private final ProjectPermissionService permissionService;
     private final UserRepository userRepository;
     private final AuditService auditService;
+
+    /**
+     * Khởi tạo service (constructor injection tường minh).
+     *
+     * @param projectRepository       repository dự án
+     * @param projectMemberRepository repository thành viên dự án
+     * @param permissionService       kiểm tra phân quyền theo dự án
+     * @param userRepository          repository người dùng (ghép thông tin thành viên)
+     * @param auditService            ghi audit log
+     * @reference docs/plan-backend/01-kien-truc-va-stack.md §4.1
+     */
+    public ProjectService(ProjectRepository projectRepository, ProjectMemberRepository projectMemberRepository,
+                          ProjectPermissionService permissionService, UserRepository userRepository,
+                          AuditService auditService) {
+        this.projectRepository = projectRepository;
+        this.projectMemberRepository = projectMemberRepository;
+        this.permissionService = permissionService;
+        this.userRepository = userRepository;
+        this.auditService = auditService;
+    }
 
     /**
      * Tạo dự án — người tạo trở thành OWNER + thành viên (FR-B02).

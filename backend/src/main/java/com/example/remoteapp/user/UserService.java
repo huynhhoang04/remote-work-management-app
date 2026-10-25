@@ -7,7 +7,6 @@ import com.example.remoteapp.user.dto.UpdateProfileRequest;
 import com.example.remoteapp.user.dto.UserResponse;
 import java.time.Instant;
 import java.util.UUID;
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,11 +16,22 @@ import org.springframework.transaction.annotation.Transactional;
  * @reference docs/plan-backend/03-chuc-nang-dac-ta-va-implementation.md §A4, §A5
  */
 @Service
-@RequiredArgsConstructor
 public class UserService {
 
     private final UserRepository userRepository;
     private final DeviceRepository deviceRepository;
+
+    /**
+     * Khởi tạo service (constructor injection tường minh).
+     *
+     * @param userRepository   repository người dùng
+     * @param deviceRepository repository thiết bị FCM
+     * @reference docs/plan-backend/01-kien-truc-va-stack.md §4.1
+     */
+    public UserService(UserRepository userRepository, DeviceRepository deviceRepository) {
+        this.userRepository = userRepository;
+        this.deviceRepository = deviceRepository;
+    }
 
     /**
      * Xem hồ sơ người dùng hiện tại (FR-A04).

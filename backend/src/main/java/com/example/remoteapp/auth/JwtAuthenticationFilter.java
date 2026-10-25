@@ -7,7 +7,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.List;
-import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -26,12 +25,21 @@ import org.springframework.web.filter.OncePerRequestFilter;
  * @reference docs/plan-backend/01-kien-truc-va-stack.md §5
  */
 @Component
-@RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private static final String BEARER_PREFIX = "Bearer ";
 
     private final JwtService jwtService;
+
+    /**
+     * Khởi tạo filter (constructor injection tường minh).
+     *
+     * @param jwtService service kiểm tra / giải mã access token
+     * @reference docs/plan-backend/01-kien-truc-va-stack.md §5
+     */
+    public JwtAuthenticationFilter(JwtService jwtService) {
+        this.jwtService = jwtService;
+    }
 
     /**
      * Xác thực request bằng JWT nếu có.

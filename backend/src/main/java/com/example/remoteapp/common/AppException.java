@@ -11,6 +11,8 @@ import lombok.Getter;
 @Getter
 public class AppException extends RuntimeException {
 
+    private static final long serialVersionUID = 1L;
+
     /** Mã lỗi nghiệp vụ. */
     private final ErrorCode errorCode;
 

@@ -3,7 +3,6 @@ package com.example.remoteapp.config;
 import com.example.remoteapp.auth.JwtAuthenticationFilter;
 import com.example.remoteapp.common.RestAuthenticationEntryPoint;
 import java.util.List;
-import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -30,11 +29,23 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
  */
 @Configuration
 @EnableWebSecurity
-@RequiredArgsConstructor
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final RestAuthenticationEntryPoint restAuthenticationEntryPoint;
+
+    /**
+     * Khởi tạo cấu hình bảo mật (constructor injection tường minh).
+     *
+     * @param jwtAuthenticationFilter    filter xác thực JWT
+     * @param restAuthenticationEntryPoint entry point trả 401 JSON
+     * @reference docs/plan-backend/01-kien-truc-va-stack.md §5
+     */
+    public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter,
+                          RestAuthenticationEntryPoint restAuthenticationEntryPoint) {
+        this.jwtAuthenticationFilter = jwtAuthenticationFilter;
+        this.restAuthenticationEntryPoint = restAuthenticationEntryPoint;
+    }
 
     /**
      * Bean mã hoá mật khẩu BCrypt (cost 10).

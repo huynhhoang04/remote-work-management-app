@@ -6,6 +6,9 @@ spring:
     url: ${DB_URL:jdbc:postgresql://localhost:5432/remoteapp}
     username: ${DB_USERNAME:remoteapp}
     password: ${DB_PASSWORD:remoteapp}
+    hikari:
+      # Neon free giới hạn connection; 1 instance Render chỉ cần pool nhỏ
+      maximum-pool-size: ${DB_POOL_SIZE:5}
 
   jpa:
     hibernate:
@@ -29,6 +32,11 @@ spring:
     port: ${MAIL_PORT:1025}
     username: ${MAIL_USERNAME:}
     password: ${MAIL_PASSWORD:}
+    properties:
+      # Dev mặc định: mailpit localhost:1025 (mail KHÔNG tới hộp thư thật).
+      # SMTP thật: đặt MAIL_SMTP_AUTH=true, MAIL_SMTP_STARTTLS=true, MAIL_FROM=<sender đã xác thực>.
+      mail.smtp.auth: ${MAIL_SMTP_AUTH:false}
+      mail.smtp.starttls.enable: ${MAIL_SMTP_STARTTLS:false}
 
 app:
   jwt:
@@ -42,9 +50,13 @@ app:
     login-window-seconds: 60
   upload:
     dir: ${UPLOAD_DIR:uploads}
+  mail:
+    # Địa chỉ gửi (From) của email hệ thống. SMTP thật: dùng sender đã xác thực (SPF/DKIM).
+    from: ${MAIL_FROM:no-reply@remoteapp.local}
 
 server:
-  port: 8080
+  # Render inject biến PORT; local không có PORT -> 8080; SERVER_PORT vẫn override được khi dev
+  port: ${SERVER_PORT:${PORT:8080}}
 
 springdoc:
   api-docs:
@@ -57,3 +69,8 @@ management:
     web:
       exposure:
         include: health
+  health:
+    # Prod chưa cấu hình SMTP -> mail health indicator sẽ làm /actuator/health = DOWN
+    # và Render health check fail. Tắt indicator này (email lỗi không phải lỗi hệ thống).
+    mail:
+      enabled: false

@@ -12,7 +12,6 @@ import java.security.SecureRandom;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,7 +21,6 @@ import org.springframework.transaction.annotation.Transactional;
  * @reference docs/plan-backend/03-chuc-nang-dac-ta-va-implementation.md §B3
  */
 @Service
-@RequiredArgsConstructor
 public class InviteService {
 
     private static final String ENTITY_TYPE = "INVITE";
@@ -35,6 +33,23 @@ public class InviteService {
     private final ProjectMemberRepository memberRepository;
     private final ProjectPermissionService permissionService;
     private final AuditService auditService;
+
+    /**
+     * Khởi tạo service (constructor injection tường minh).
+     *
+     * @param inviteRepository  repository link mời
+     * @param memberRepository  repository thành viên dự án
+     * @param permissionService kiểm tra phân quyền theo dự án
+     * @param auditService      ghi audit log
+     * @reference docs/plan-backend/01-kien-truc-va-stack.md §4.1
+     */
+    public InviteService(ProjectInviteRepository inviteRepository, ProjectMemberRepository memberRepository,
+                         ProjectPermissionService permissionService, AuditService auditService) {
+        this.inviteRepository = inviteRepository;
+        this.memberRepository = memberRepository;
+        this.permissionService = permissionService;
+        this.auditService = auditService;
+    }
 
     /**
      * Sinh link mời mới — Owner/Admin (FR-B03).

@@ -14,7 +14,6 @@ import jakarta.validation.Valid;
 import java.net.URI;
 import java.util.List;
 import java.util.UUID;
-import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
@@ -35,11 +34,22 @@ import org.springframework.web.bind.annotation.RestController;
  */
 @RestController
 @RequestMapping("/api/v1")
-@RequiredArgsConstructor
 public class ProjectController {
 
     private final ProjectService projectService;
     private final InviteService inviteService;
+
+    /**
+     * Khởi tạo controller (constructor injection tường minh).
+     *
+     * @param projectService service dự án + thành viên
+     * @param inviteService  service link mời
+     * @reference docs/plan-backend/01-kien-truc-va-stack.md §4.1
+     */
+    public ProjectController(ProjectService projectService, InviteService inviteService) {
+        this.projectService = projectService;
+        this.inviteService = inviteService;
+    }
 
     /**
      * Danh sách dự án của người dùng (FR-B02).

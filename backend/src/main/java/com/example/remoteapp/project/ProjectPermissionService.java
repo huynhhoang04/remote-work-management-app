@@ -3,7 +3,6 @@ package com.example.remoteapp.project;
 import com.example.remoteapp.common.AppException;
 import com.example.remoteapp.common.ErrorCode;
 import java.util.UUID;
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,11 +17,23 @@ import org.springframework.transaction.annotation.Transactional;
  * @reference docs/04-thiet-ke-backend.md §9
  */
 @Service
-@RequiredArgsConstructor
 public class ProjectPermissionService {
 
     private final ProjectRepository projectRepository;
     private final ProjectMemberRepository projectMemberRepository;
+
+    /**
+     * Khởi tạo service (constructor injection tường minh).
+     *
+     * @param projectRepository       repository dự án
+     * @param projectMemberRepository repository thành viên dự án
+     * @reference docs/plan-backend/01-kien-truc-va-stack.md §4.1
+     */
+    public ProjectPermissionService(ProjectRepository projectRepository,
+                                    ProjectMemberRepository projectMemberRepository) {
+        this.projectRepository = projectRepository;
+        this.projectMemberRepository = projectMemberRepository;
+    }
 
     /**
      * Yêu cầu người dùng có vai trò tối thiểu trong dự án.

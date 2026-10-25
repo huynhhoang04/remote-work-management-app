@@ -5,7 +5,6 @@ import com.example.remoteapp.user.dto.RegisterDeviceRequest;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import java.util.UUID;
-import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -20,10 +19,19 @@ import org.springframework.web.bind.annotation.RestController;
  */
 @RestController
 @RequestMapping("/api/v1")
-@RequiredArgsConstructor
 public class DeviceController {
 
     private final UserService userService;
+
+    /**
+     * Khởi tạo controller (constructor injection tường minh).
+     *
+     * @param userService service xử lý device token
+     * @reference docs/plan-backend/01-kien-truc-va-stack.md §4.1
+     */
+    public DeviceController(UserService userService) {
+        this.userService = userService;
+    }
 
     /**
      * Đăng ký FCM token của thiết bị (nền cho push notification).

@@ -1,6 +1,5 @@
 package com.example.remoteapp.audit;
 
-import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;

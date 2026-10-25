@@ -4,7 +4,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.AuthenticationEntryPoint;
@@ -17,10 +16,19 @@ import org.springframework.stereotype.Component;
  * @reference docs/plan-backend/02-danh-sach-api.md §1.1
  */
 @Component
-@RequiredArgsConstructor
 public class RestAuthenticationEntryPoint implements AuthenticationEntryPoint {
 
     private final ObjectMapper objectMapper;
+
+    /**
+     * Khởi tạo entry point (constructor injection tường minh).
+     *
+     * @param objectMapper mapper dùng để ghi body JSON
+     * @reference docs/plan-backend/01-kien-truc-va-stack.md §4.1
+     */
+    public RestAuthenticationEntryPoint(ObjectMapper objectMapper) {
+        this.objectMapper = objectMapper;
+    }
 
     /**
      * Ghi response 401 JSON khi chưa xác thực.

@@ -12,7 +12,6 @@ import com.example.remoteapp.user.dto.UserResponse;
 import jakarta.validation.Valid;
 import java.net.URI;
 import java.util.UUID;
-import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -26,10 +25,19 @@ import org.springframework.web.bind.annotation.RestController;
  */
 @RestController
 @RequestMapping("/api/v1")
-@RequiredArgsConstructor
 public class AuthController {
 
     private final AuthService authService;
+
+    /**
+     * Khởi tạo controller (constructor injection tường minh).
+     *
+     * @param authService service xác thực
+     * @reference docs/plan-backend/01-kien-truc-va-stack.md §4.1
+     */
+    public AuthController(AuthService authService) {
+        this.authService = authService;
+    }
 
     /**
      * Đăng ký tài khoản (FR-A01).

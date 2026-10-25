@@ -1,7 +1,6 @@
 package com.example.remoteapp.audit;
 
 import java.util.UUID;
-import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -15,10 +14,19 @@ import org.springframework.transaction.annotation.Transactional;
  * @reference docs/plan-backend/03-chuc-nang-dac-ta-va-implementation.md §G
  */
 @Service
-@RequiredArgsConstructor
 public class AuditService {
 
     private final AuditRepository auditRepository;
+
+    /**
+     * Khởi tạo service (constructor injection tường minh).
+     *
+     * @param auditRepository repository audit log
+     * @reference docs/plan-backend/01-kien-truc-va-stack.md §4.1
+     */
+    public AuditService(AuditRepository auditRepository) {
+        this.auditRepository = auditRepository;
+    }
 
     /**
      * Ghi một hành động vào audit log (đồng bộ trong transaction của request).
