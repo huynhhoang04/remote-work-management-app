@@ -1,0 +1,29 @@
+# Render Blueprint — CI/CD phase 1
+# @reference docs/plan-deploy/01-ci-cd-phase-1.md
+#
+# Cách dùng: Render → New → Blueprint → chọn repo này → Render đọc file này và tạo service.
+# Các biến sync: false sẽ được Render hỏi giá trị lúc tạo (không lưu trong repo).
+services:
+  - type: web
+    name: remoteapp-backend
+    runtime: docker
+    plan: free
+    region: singapore
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    healthCheckPath: /actuator/health
+    # Tắt auto-deploy: chỉ GitHub Actions (sau khi test xanh) gọi Deploy Hook
+    autoDeploy: false
+    envVars:
+      - key: DB_URL
+        sync: false
+      - key: DB_USERNAME
+        sync: false
+      - key: DB_PASSWORD
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: DB_POOL_SIZE
+        value: "5"
+      - key: JAVA_TOOL_OPTIONS
+        value: "-XX:MaxRAMPercentage=70 -Duser.timezone=UTC"

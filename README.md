@@ -16,6 +16,7 @@ miễn phí, tiếng Việt, tự host bằng Docker.
 | Tài liệu phân tích, kiến trúc, roadmap | ✅ `docs/01` → `docs/03` |
 | Thiết kế backend v0.2 (đã rà soát & cắt giảm chức năng) | ✅ `docs/04` |
 | Kế hoạch triển khai backend (kiến trúc, API, đặc tả) | ✅ `docs/plan-backend/` |
+| Kế hoạch CI/CD phase 1 (Render + Neon) | 🛠 Đang setup — `docs/plan-deploy/01-ci-cd-phase-1.md` |
 | Backend bước 1–2: auth, user/device, dự án + RBAC + link mời, audit log | ✅ Test xanh, có CI |
 | Backend bước 3+: task, thống kê, nhắc nhở, chat | ⏭ Tiếp theo |
 | Ứng dụng Android (Kotlin/Compose) | ⏳ Khởi tạo sau |
@@ -71,6 +72,25 @@ cd backend
 - Đổi mật khẩu cấu hình qua biến môi trường: `DB_URL`, `DB_USERNAME`, `DB_PASSWORD`, `JWT_SECRET`,
   `MAIL_HOST`, `MAIL_PORT`... — không commit secret.
 
+## Gửi email: mailpit (dev) vs SMTP thật
+
+- **Dev (mặc định):** backend gửi SMTP tới `localhost:1025` = **mailpit** — mail bị chặn ở đó, **không
+  tới hộp thư thật**. Chạy `mailpit` (UI http://localhost:8025) hoặc `docker compose -f infra/docker-compose.yml up -d mailpit`.
+- **SMTP thật** (khi app chạy với backend thật): chỉ cần cấu hình backend bằng biến môi trường,
+  **không sửa code**. Ví dụ Gmail (cần bật 2FA + App Password):
+
+```bash
+MAIL_HOST=smtp.gmail.com MAIL_PORT=587 \
+MAIL_USERNAME=you@gmail.com MAIL_PASSWORD='<app-password>' \
+MAIL_SMTP_AUTH=true MAIL_SMTP_STARTTLS=true MAIL_FROM=you@gmail.com \
+./mvnw spring-boot:run
+```
+
+  Có thể dùng Brevo/SendGrid/Amazon SES... cùng cơ chế. Ứng dụng Android không tự gửi mail — nó gọi
+  backend, nên chỉ backend cần SMTP đúng. Nếu SMTP lỗi, API vẫn trả 204 (không lộ email tồn tại) và
+  chỉ ghi warning trong log backend.
+- Sender phải là địa chỉ đã xác thực (SPF/DKIM) để vào inbox; Gmail giới hạn ~500 mail/ngày.
+
 ---
 
 ## Tài liệu
@@ -84,10 +104,34 @@ cd backend
 | [`docs/plan-backend/01-kien-truc-va-stack.md`](docs/plan-backend/01-kien-truc-va-stack.md) | Kiến trúc dự án + stack (Maven), cấu trúc package, dependency rules |
 | [`docs/plan-backend/02-danh-sach-api.md`](docs/plan-backend/02-danh-sach-api.md) | Danh sách API REST + WebSocket, mã lỗi |
 | [`docs/plan-backend/03-chuc-nang-dac-ta-va-implementation.md`](docs/plan-backend/03-chuc-nang-dac-ta-va-implementation.md) | Đặc tả + cách implementation từng chức năng |
+| [`docs/plan-deploy/01-ci-cd-phase-1.md`](docs/plan-deploy/01-ci-cd-phase-1.md) | Plan CI/CD phase 1: Render (Docker) + Neon (PostgreSQL), deploy hook từ GitHub Actions |
 | [`docs/baocao-25-09-2026/`](docs/baocao-25-09-2026/) | Tài liệu báo cáo BTL 25/09/2026 (mô tả, công nghệ, khảo sát) |
 
 > `docs/04` + `docs/plan-backend/` là nguồn **hiện hành** cho backend; `docs/01–03` là bản gốc,
 > một phần đã bị điều chỉnh (bảng đối chiếu trong `docs/04` mục 1.3).
+
+## Deploy (phase 1 — Render + Neon)
+
+- **Backend:** Render free — runtime **Docker**, region Singapore: `https://<service>.onrender.com`
+  (điền URL thật sau khi tạo service). Config trong `render.yaml`.
+- **Database:** Neon free (PostgreSQL 16, `sslmode=require`); Flyway tự chạy migration khi khởi động.
+- **CI/CD:** push `main` → GitHub Actions chạy test + `docker build` → gọi **Render Deploy Hook**
+  (GitHub secret `RENDER_DEPLOY_HOOK_URL`). `autoDeploy: false` nên test đỏ **không** deploy.
+  Khi chưa tạo secret, job `deploy` bỏ qua kèm notice (không làm đỏ CI).
+- **Env vars trên Render:** `DB_URL`, `DB_USERNAME`, `DB_PASSWORD`, `JWT_SECRET` (secret),
+  `DB_POOL_SIZE=5`, `JAVA_TOOL_OPTIONS=-XX:MaxRAMPercentage=70 -Duser.timezone=UTC`.
+  Tuỳ chọn SMTP thật: `MAIL_*`, `MAIL_SMTP_AUTH`, `MAIL_SMTP_STARTTLS`, `MAIL_FROM`.
+- **Free tier:** service ngủ sau ~15 phút (request đầu 30–60 s), Neon autosuspend; Render free
+  **không có persistent disk** → file upload (phase task/file) sẽ dùng object storage.
+- **Smoke test sau deploy:**
+
+  ```bash
+  cd api-tests/collections/00-smoke
+  npx -y @usebruno/cli run --env-file ../../environments/render.yml
+  ```
+
+- **Rollback:** Render → Deploys → chọn bản cũ → **Redeploy** (hoặc revert commit).
+- Chi tiết từng bước: `docs/plan-deploy/01-ci-cd-phase-1.md`.
 
 ---
 

@@ -45,7 +45,8 @@ backend/                     Spring Boot modular monolith (Maven)
 └─ src/test/java/            unit tests (Mockito) + integration tests (Testcontainers)
 docs/                        project documentation (see section 4)
 infra/                       dev docker-compose (PostgreSQL, mailpit)
-.github/workflows/           backend CI (./mvnw test)
+render.yaml                  Render Blueprint — deploy phase 1 (Docker, free)
+.github/workflows/           backend CI (./mvnw test) + deploy job (Render hook)
 .agents/skills/              mobile app design skills
 android/, infra/             (later) Kotlin app, deployment infra
 ```
@@ -80,6 +81,11 @@ matching doc **in the same commit**.
 - **Audit:** important actions call `AuditService.record(...)` inside the transaction.
 - **Entities:** extend `BaseEntity` (UUID id, createdAt, updatedAt), `@Enumerated(EnumType.STRING)`,
   soft delete via `deletedAt`; Lombok `@Getter/@Setter`; manual entity ↔ DTO mapping (no MapStruct).
+- **Constructor injection:** write **explicit constructors**; `@RequiredArgsConstructor` is banned in
+  this repo. Reason: the VSCode Java extension ships its own Lombok agent (1.18.39) that mis-compiles
+  Lombok-generated constructors, reports one error per dependency in the editor and writes broken
+  class files into `target/classes`, which then makes `./mvnw spring-boot:run` die with
+  `java.lang.Error: Unresolved compilation problem`. Lombok is still fine for entity accessors.
 - **Javadoc:** every public method has Javadoc plus a `@reference` line pointing to the matching
   section of `docs/plan-backend/03` (or `docs/04`) — the codebase currently follows this.
 - **Language:** English identifiers; Vietnamese comments/Javadoc/error messages.
@@ -115,6 +121,10 @@ docker compose -f infra/docker-compose.yml up -d
 ```
 
 CI: `.github/workflows/backend-ci.yml` runs `./mvnw -B test` on JDK 21 for every push/PR.
+
+Troubleshooting: if the app fails with `java.lang.Error: Unresolved compilation problem` while
+`./mvnw test` is green, shut down the running app, fix the error the IDE reports, then
+`./mvnw clean` before starting again — the IDE build wrote broken classes into `target/classes`.
 
 ## 9. How to work here
 

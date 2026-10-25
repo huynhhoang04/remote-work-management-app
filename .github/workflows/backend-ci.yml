@@ -28,3 +28,29 @@ jobs:
 
       - name: Run tests
         run: ./mvnw -B test
+
+  # Chỉ deploy khi test xanh VÀ là push lên main.
+  # Render đặt autoDeploy: false nên không có đường vòng nào bỏ qua CI.
+  deploy:
+    needs: test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build Docker image (bắt lỗi Dockerfile trước khi deploy)
+        run: docker build -t remoteapp-backend:ci .
+
+      - name: Trigger Render deploy
+        env:
+          RENDER_DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+        run: |
+          if [ -z "$RENDER_DEPLOY_HOOK_URL" ]; then
+            echo "::notice::Chưa cấu hình GitHub secret RENDER_DEPLOY_HOOK_URL — bỏ qua deploy (xem docs/plan-deploy/01-ci-cd-phase-1.md)"
+            exit 0
+          fi
+          curl -fsS -X POST "$RENDER_DEPLOY_HOOK_URL"
+          echo "Render deploy hook triggered."
