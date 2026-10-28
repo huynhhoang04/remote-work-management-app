@@ -1,0 +1,41 @@
+info:
+  name: 71 - Conversations - Create direct again (idempotent)
+  type: http
+  seq: 71
+  tags:
+  - chat
+http:
+  method: POST
+  url: "{{baseUrl}}/api/v1/conversations"
+  headers:
+  - name: Content-Type
+    value: "application/json"
+  - name: Authorization
+    value: "Bearer {{tokenA}}"
+  auth: inherit
+  body:
+    type: json
+    data: |-
+      {
+        "userId": "{{userBId}}"
+      }
+runtime:
+  scripts:
+  - type: tests
+    code: |
+      function readVar(name) {
+        try { var v = bru.getVar(name); if (v) return v; } catch (e) {}
+        return bru.getEnvVar(name);
+      }
+      
+      test("HTTP 200 expected", function () {
+        expect(res.status).to.equal(200);
+      });
+      test("cùng hội thoại", function () { expect(res.body.id).to.equal(readVar("directConversationId")); });
+settings:
+  encodeUrl: true
+  timeout: 30000
+  followRedirects: true
+  maxRedirects: 5
+docs: |-
+  SIDE EFFECT (idempotent): gọi lại phải trả đúng hội thoại cũ, không tạo mới.

@@ -1,0 +1,38 @@
+info:
+  name: 63 - Notifications - List A
+  type: http
+  seq: 63
+  tags:
+  - notifications
+http:
+  method: GET
+  url: "{{baseUrl}}/api/v1/notifications?page=0&size=20"
+  headers:
+  - name: Authorization
+    value: "Bearer {{tokenA}}"
+  auth: inherit
+runtime:
+  scripts:
+  - type: after-response
+    code: |
+      if (res.body && res.body.content && res.body.content.length && res.body.content[0].id) {
+        bru.setVar("notificationAId", res.body.content[0].id);
+      }
+  - type: tests
+    code: |
+      function readVar(name) {
+        try { var v = bru.getVar(name); if (v) return v; } catch (e) {}
+        return bru.getEnvVar(name);
+      }
+      
+      test("HTTP 200 expected", function () {
+        expect(res.status).to.equal(200);
+      });
+      test("A có notification MENTION", function () { expect(res.body.content.some(function (n) { return n.type === "MENTION"; })).to.equal(true); });
+settings:
+  encodeUrl: true
+  timeout: 30000
+  followRedirects: true
+  maxRedirects: 5
+docs: |-
+  Read-only: A nhận MENTION từ bình luận của B.

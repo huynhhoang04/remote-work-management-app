@@ -1,0 +1,48 @@
+info:
+  name: 53 - Schedule - Create
+  type: http
+  seq: 53
+  tags:
+  - schedule
+http:
+  method: POST
+  url: "{{baseUrl}}/api/v1/schedule/events"
+  headers:
+  - name: Content-Type
+    value: "application/json"
+  - name: Authorization
+    value: "Bearer {{tokenA}}"
+  auth: inherit
+  body:
+    type: json
+    data: |-
+      {
+        "title": "Hop nhom",
+        "description": "Hop tien do",
+        "startTime": "2026-12-05T02:00:00Z",
+        "endTime": "2026-12-05T03:00:00Z",
+        "taskId": "{{taskId}}"
+      }
+runtime:
+  scripts:
+  - type: after-response
+    code: |
+      if (res.body && res.body.id) bru.setVar("eventId", res.body.id);
+  - type: tests
+    code: |
+      function readVar(name) {
+        try { var v = bru.getVar(name); if (v) return v; } catch (e) {}
+        return bru.getEnvVar(name);
+      }
+      
+      test("HTTP 201 expected", function () {
+        expect(res.status).to.equal(201);
+      });
+      test("gắn đúng task", function () { expect(res.body.taskId).to.equal(readVar("taskId")); });
+settings:
+  encodeUrl: true
+  timeout: 30000
+  followRedirects: true
+  maxRedirects: 5
+docs: |-
+  SIDE EFFECT: tạo sự kiện lịch cá nhân.

@@ -1,0 +1,32 @@
+info:
+  name: 49 - Comments - Delete by author
+  type: http
+  seq: 49
+  tags:
+  - comments
+http:
+  method: DELETE
+  url: "{{baseUrl}}/api/v1/tasks/{{taskId}}/comments/{{commentId}}"
+  headers:
+  - name: Authorization
+    value: "Bearer {{tokenA}}"
+  auth: inherit
+runtime:
+  scripts:
+  - type: tests
+    code: |
+      function readVar(name) {
+        try { var v = bru.getVar(name); if (v) return v; } catch (e) {}
+        return bru.getEnvVar(name);
+      }
+      
+      test("HTTP 204 expected", function () {
+        expect(res.status).to.equal(204);
+      });
+settings:
+  encodeUrl: true
+  timeout: 30000
+  followRedirects: true
+  maxRedirects: 5
+docs: |-
+  SIDE EFFECT: A xoá mềm bình luận của mình (hiển thị 'đã xóa').

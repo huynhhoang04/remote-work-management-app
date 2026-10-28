@@ -1,0 +1,33 @@
+info:
+  name: 57 - Stats - Today
+  type: http
+  seq: 57
+  tags:
+  - stats
+http:
+  method: GET
+  url: "{{baseUrl}}/api/v1/me/today"
+  headers:
+  - name: Authorization
+    value: "Bearer {{tokenA}}"
+  auth: inherit
+runtime:
+  scripts:
+  - type: tests
+    code: |
+      function readVar(name) {
+        try { var v = bru.getVar(name); if (v) return v; } catch (e) {}
+        return bru.getEnvVar(name);
+      }
+      
+      test("HTTP 200 expected", function () {
+        expect(res.status).to.equal(200);
+      });
+      test("đủ 4 nhóm", function () { expect(res.body).to.have.property("overdueTasks"); expect(res.body).to.have.property("dueTodayTasks"); expect(res.body).to.have.property("upcomingTasks"); expect(res.body).to.have.property("todayEvents"); });
+settings:
+  encodeUrl: true
+  timeout: 30000
+  followRedirects: true
+  maxRedirects: 5
+docs: |-
+  Read-only. Ngày tính theo APP_TIMEZONE (mặc định Asia/Ho_Chi_Minh).

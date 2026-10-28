@@ -1,0 +1,46 @@
+info:
+  name: 28 - Auth - Login user C
+  type: http
+  seq: 28
+  tags:
+  - auth
+  - setup
+http:
+  method: POST
+  url: "{{baseUrl}}/api/v1/auth/login"
+  headers:
+  - name: Content-Type
+    value: "application/json"
+  auth: inherit
+  body:
+    type: json
+    data: |-
+      {
+        "email": "{{inputEmailC}}",
+        "password": "{{inputPasswordC}}"
+      }
+runtime:
+  scripts:
+  - type: after-response
+    code: |
+      if (res.body && res.body.accessToken) bru.setVar("tokenC", res.body.accessToken);
+      if (res.body && res.body.refreshToken) bru.setVar("refreshTokenC", res.body.refreshToken);
+      if (res.body && res.body.user && res.body.user.id) bru.setVar("userCId", res.body.user.id);
+  - type: tests
+    code: |
+      function readVar(name) {
+        try { var v = bru.getVar(name); if (v) return v; } catch (e) {}
+        return bru.getEnvVar(name);
+      }
+      
+      test("HTTP 200 expected", function () {
+        expect(res.status).to.equal(200);
+      });
+      test("cặp token C được cấp", function () { expect(res.body.accessToken).to.be.a("string"); });
+settings:
+  encodeUrl: true
+  timeout: 30000
+  followRedirects: true
+  maxRedirects: 5
+docs: |-
+  Bắt tokenC cho các test 403 (tài khoản ngoài dự án).

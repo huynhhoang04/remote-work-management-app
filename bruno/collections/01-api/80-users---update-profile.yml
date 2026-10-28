@@ -1,0 +1,41 @@
+info:
+  name: 80 - Users - Update profile
+  type: http
+  seq: 80
+  tags:
+  - users
+http:
+  method: PATCH
+  url: "{{baseUrl}}/api/v1/users/me"
+  headers:
+  - name: Content-Type
+    value: "application/json"
+  - name: Authorization
+    value: "Bearer {{tokenA}}"
+  auth: inherit
+  body:
+    type: json
+    data: |-
+      {
+        "fullName": "Owner Bruno"
+      }
+runtime:
+  scripts:
+  - type: tests
+    code: |
+      function readVar(name) {
+        try { var v = bru.getVar(name); if (v) return v; } catch (e) {}
+        return bru.getEnvVar(name);
+      }
+      
+      test("HTTP 200 expected", function () {
+        expect(res.status).to.equal(200);
+      });
+      test("tên đã đổi", function () { expect(res.body.fullName).to.equal("Owner Bruno"); });
+settings:
+  encodeUrl: true
+  timeout: 30000
+  followRedirects: true
+  maxRedirects: 5
+docs: |-
+  SIDE EFFECT: đổi họ tên.

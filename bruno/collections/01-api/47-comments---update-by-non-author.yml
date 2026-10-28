@@ -1,0 +1,42 @@
+info:
+  name: 47 - Comments - Update by non-author
+  type: http
+  seq: 47
+  tags:
+  - comments
+  - negative
+http:
+  method: PATCH
+  url: "{{baseUrl}}/api/v1/tasks/{{taskId}}/comments/{{commentId}}"
+  headers:
+  - name: Content-Type
+    value: "application/json"
+  - name: Authorization
+    value: "Bearer {{tokenB}}"
+  auth: inherit
+  body:
+    type: json
+    data: |-
+      {
+        "content": "Sua trom"
+      }
+runtime:
+  scripts:
+  - type: tests
+    code: |
+      function readVar(name) {
+        try { var v = bru.getVar(name); if (v) return v; } catch (e) {}
+        return bru.getEnvVar(name);
+      }
+      
+      test("HTTP 403 expected", function () {
+        expect(res.status).to.equal(403);
+      });
+      test("mã lỗi tác giả", function () { expect(res.body.code).to.equal("COMMENT_FORBIDDEN"); });
+settings:
+  encodeUrl: true
+  timeout: 30000
+  followRedirects: true
+  maxRedirects: 5
+docs: |-
+  Negative test: B không được sửa bình luận của A.

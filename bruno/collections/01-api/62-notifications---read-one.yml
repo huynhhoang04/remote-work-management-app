@@ -1,0 +1,32 @@
+info:
+  name: 62 - Notifications - Read one
+  type: http
+  seq: 62
+  tags:
+  - notifications
+http:
+  method: PATCH
+  url: "{{baseUrl}}/api/v1/notifications/{{notificationBId}}/read"
+  headers:
+  - name: Authorization
+    value: "Bearer {{tokenB}}"
+  auth: inherit
+runtime:
+  scripts:
+  - type: tests
+    code: |
+      function readVar(name) {
+        try { var v = bru.getVar(name); if (v) return v; } catch (e) {}
+        return bru.getEnvVar(name);
+      }
+      
+      test("HTTP 204 expected", function () {
+        expect(res.status).to.equal(204);
+      });
+settings:
+  encodeUrl: true
+  timeout: 30000
+  followRedirects: true
+  maxRedirects: 5
+docs: |-
+  SIDE EFFECT: đánh dấu 1 thông báo đã đọc.

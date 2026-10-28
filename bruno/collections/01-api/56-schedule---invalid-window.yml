@@ -1,0 +1,44 @@
+info:
+  name: 56 - Schedule - Invalid window
+  type: http
+  seq: 56
+  tags:
+  - schedule
+  - negative
+http:
+  method: POST
+  url: "{{baseUrl}}/api/v1/schedule/events"
+  headers:
+  - name: Content-Type
+    value: "application/json"
+  - name: Authorization
+    value: "Bearer {{tokenA}}"
+  auth: inherit
+  body:
+    type: json
+    data: |-
+      {
+        "title": "Sai gio",
+        "startTime": "2026-12-05T05:00:00Z",
+        "endTime": "2026-12-05T05:00:00Z"
+      }
+runtime:
+  scripts:
+  - type: tests
+    code: |
+      function readVar(name) {
+        try { var v = bru.getVar(name); if (v) return v; } catch (e) {}
+        return bru.getEnvVar(name);
+      }
+      
+      test("HTTP 400 expected", function () {
+        expect(res.status).to.equal(400);
+      });
+      test("mã lỗi thời gian", function () { expect(res.body.code).to.equal("SCHEDULE_TIME_INVALID"); });
+settings:
+  encodeUrl: true
+  timeout: 30000
+  followRedirects: true
+  maxRedirects: 5
+docs: |-
+  Negative test: startTime phải trước endTime.

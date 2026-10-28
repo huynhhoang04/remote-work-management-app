@@ -1,0 +1,33 @@
+info:
+  name: 77 - Files - Download generic
+  type: http
+  seq: 77
+  tags:
+  - files
+http:
+  method: GET
+  url: "{{baseUrl}}/api/v1/files/{{fileId}}"
+  headers:
+  - name: Authorization
+    value: "Bearer {{tokenA}}"
+  auth: inherit
+runtime:
+  scripts:
+  - type: tests
+    code: |
+      function readVar(name) {
+        try { var v = bru.getVar(name); if (v) return v; } catch (e) {}
+        return bru.getEnvVar(name);
+      }
+      
+      test("HTTP 200 expected", function () {
+        expect(res.status).to.equal(200);
+      });
+      test("có nội dung", function () { expect(res.body).to.not.equal(undefined); });
+settings:
+  encodeUrl: true
+  timeout: 30000
+  followRedirects: true
+  maxRedirects: 5
+docs: |-
+  Read-only.

@@ -1,0 +1,34 @@
+info:
+  name: 64 - Notifications - Read other user notification
+  type: http
+  seq: 64
+  tags:
+  - notifications
+  - negative
+http:
+  method: PATCH
+  url: "{{baseUrl}}/api/v1/notifications/{{notificationAId}}/read"
+  headers:
+  - name: Authorization
+    value: "Bearer {{tokenB}}"
+  auth: inherit
+runtime:
+  scripts:
+  - type: tests
+    code: |
+      function readVar(name) {
+        try { var v = bru.getVar(name); if (v) return v; } catch (e) {}
+        return bru.getEnvVar(name);
+      }
+      
+      test("HTTP 404 expected", function () {
+        expect(res.status).to.equal(404);
+      });
+      test("mã lỗi không tìm thấy", function () { expect(res.body.code).to.equal("NOTIFICATION_NOT_FOUND"); });
+settings:
+  encodeUrl: true
+  timeout: 30000
+  followRedirects: true
+  maxRedirects: 5
+docs: |-
+  Negative test: B không đọc hộ thông báo của A (trả 404, không lộ dữ liệu).

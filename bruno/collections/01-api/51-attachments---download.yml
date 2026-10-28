@@ -1,0 +1,33 @@
+info:
+  name: 51 - Attachments - Download
+  type: http
+  seq: 51
+  tags:
+  - attachments
+http:
+  method: GET
+  url: "{{baseUrl}}/api/v1/files/{{attachmentId}}"
+  headers:
+  - name: Authorization
+    value: "Bearer {{tokenB}}"
+  auth: inherit
+runtime:
+  scripts:
+  - type: tests
+    code: |
+      function readVar(name) {
+        try { var v = bru.getVar(name); if (v) return v; } catch (e) {}
+        return bru.getEnvVar(name);
+      }
+      
+      test("HTTP 200 expected", function () {
+        expect(res.status).to.equal(200);
+      });
+      test("có nội dung", function () { expect(res.body).to.not.equal(undefined); });
+settings:
+  encodeUrl: true
+  timeout: 30000
+  followRedirects: true
+  maxRedirects: 5
+docs: |-
+  Read-only: B là thành viên dự án nên tải được file của task.

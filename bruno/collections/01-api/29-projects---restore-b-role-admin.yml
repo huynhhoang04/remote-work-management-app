@@ -1,0 +1,42 @@
+info:
+  name: 29 - Projects - Restore B role ADMIN
+  type: http
+  seq: 29
+  tags:
+  - projects
+  - rbac
+http:
+  method: PATCH
+  url: "{{baseUrl}}/api/v1/projects/{{projectId}}/members/{{userBId}}"
+  headers:
+  - name: Content-Type
+    value: "application/json"
+  - name: Authorization
+    value: "Bearer {{tokenA}}"
+  auth: inherit
+  body:
+    type: json
+    data: |-
+      {
+        "role": "ADMIN"
+      }
+runtime:
+  scripts:
+  - type: tests
+    code: |
+      function readVar(name) {
+        try { var v = bru.getVar(name); if (v) return v; } catch (e) {}
+        return bru.getEnvVar(name);
+      }
+      
+      test("HTTP 204 expected", function () {
+        expect(res.status).to.equal(204);
+      });
+settings:
+  encodeUrl: true
+  timeout: 30000
+  followRedirects: true
+  maxRedirects: 5
+docs: |-
+  SIDE EFFECT: đổi vai trò B từ VIEWER (request 18) lên ADMIN — để test nhánh ADMIN của link mời
+  và dùng B như thành viên ghi được ở các request sau.

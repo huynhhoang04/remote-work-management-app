@@ -1,0 +1,40 @@
+info:
+  name: 67 - Conversations - List
+  type: http
+  seq: 67
+  tags:
+  - chat
+http:
+  method: GET
+  url: "{{baseUrl}}/api/v1/conversations"
+  headers:
+  - name: Authorization
+    value: "Bearer {{tokenA}}"
+  auth: inherit
+runtime:
+  scripts:
+  - type: after-response
+    code: |
+      if (res.body && Array.isArray(res.body)) {
+        for (var i = 0; i < res.body.length; i++) {
+          if (res.body[i].type === "GROUP") { bru.setVar("groupConversationId", res.body[i].id); break; }
+        }
+      }
+  - type: tests
+    code: |
+      function readVar(name) {
+        try { var v = bru.getVar(name); if (v) return v; } catch (e) {}
+        return bru.getEnvVar(name);
+      }
+      
+      test("HTTP 200 expected", function () {
+        expect(res.status).to.equal(200);
+      });
+      test("có kênh GROUP của dự án", function () { expect(res.body.some(function (c) { return c.type === "GROUP"; })).to.equal(true); });
+settings:
+  encodeUrl: true
+  timeout: 30000
+  followRedirects: true
+  maxRedirects: 5
+docs: |-
+  Read-only. Kênh GROUP được tạo lazy ở lần truy cập đầu tiên.

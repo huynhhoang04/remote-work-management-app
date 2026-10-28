@@ -1,0 +1,45 @@
+info:
+  name: 37 - Tasks - Invalid deadline
+  type: http
+  seq: 37
+  tags:
+  - tasks
+  - negative
+http:
+  method: POST
+  url: "{{baseUrl}}/api/v1/tasks"
+  headers:
+  - name: Content-Type
+    value: "application/json"
+  - name: Authorization
+    value: "Bearer {{tokenA}}"
+  auth: inherit
+  body:
+    type: json
+    data: |-
+      {
+        "projectId": "{{projectId}}",
+        "title": "Sai thoi gian",
+        "startDate": "2026-12-31T00:00:00Z",
+        "deadline": "2026-12-01T00:00:00Z"
+      }
+runtime:
+  scripts:
+  - type: tests
+    code: |
+      function readVar(name) {
+        try { var v = bru.getVar(name); if (v) return v; } catch (e) {}
+        return bru.getEnvVar(name);
+      }
+      
+      test("HTTP 400 expected", function () {
+        expect(res.status).to.equal(400);
+      });
+      test("mã lỗi deadline", function () { expect(res.body.code).to.equal("TASK_DEADLINE_INVALID"); });
+settings:
+  encodeUrl: true
+  timeout: 30000
+  followRedirects: true
+  maxRedirects: 5
+docs: |-
+  Negative test: startDate sau deadline → 400. Deadline quá khứ vẫn được phép lưu.

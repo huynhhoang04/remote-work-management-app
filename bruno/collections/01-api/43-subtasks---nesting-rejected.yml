@@ -1,0 +1,42 @@
+info:
+  name: 43 - Subtasks - Nesting rejected
+  type: http
+  seq: 43
+  tags:
+  - subtasks
+  - negative
+http:
+  method: POST
+  url: "{{baseUrl}}/api/v1/tasks/{{subtaskId}}/subtasks"
+  headers:
+  - name: Content-Type
+    value: "application/json"
+  - name: Authorization
+    value: "Bearer {{tokenA}}"
+  auth: inherit
+  body:
+    type: json
+    data: |-
+      {
+        "title": "Long cap 2"
+      }
+runtime:
+  scripts:
+  - type: tests
+    code: |
+      function readVar(name) {
+        try { var v = bru.getVar(name); if (v) return v; } catch (e) {}
+        return bru.getEnvVar(name);
+      }
+      
+      test("HTTP 400 expected", function () {
+        expect(res.status).to.equal(400);
+      });
+      test("mã lỗi parent", function () { expect(res.body.code).to.equal("TASK_PARENT_INVALID"); });
+settings:
+  encodeUrl: true
+  timeout: 30000
+  followRedirects: true
+  maxRedirects: 5
+docs: |-
+  Negative test: không cho subtask lồng trong subtask.

@@ -1,0 +1,40 @@
+info:
+  name: 103 - Auth - Refresh after logout
+  type: http
+  seq: 103
+  tags:
+  - auth
+  - negative
+http:
+  method: POST
+  url: "{{baseUrl}}/api/v1/auth/refresh"
+  headers:
+  - name: Content-Type
+    value: "application/json"
+  auth: inherit
+  body:
+    type: json
+    data: |-
+      {
+        "refreshToken": "{{refreshTokenB}}"
+      }
+runtime:
+  scripts:
+  - type: tests
+    code: |
+      function readVar(name) {
+        try { var v = bru.getVar(name); if (v) return v; } catch (e) {}
+        return bru.getEnvVar(name);
+      }
+      
+      test("HTTP 401 expected", function () {
+        expect(res.status).to.equal(401);
+      });
+      test("mã lỗi refresh", function () { expect(res.body.code).to.equal("AUTH_REFRESH_INVALID"); });
+settings:
+  encodeUrl: true
+  timeout: 30000
+  followRedirects: true
+  maxRedirects: 5
+docs: |-
+  Negative test: refresh token đã bị thu hồi → 401.

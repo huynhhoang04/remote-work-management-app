@@ -1,0 +1,47 @@
+info:
+  name: 44 - Comments - Add with mention B
+  type: http
+  seq: 44
+  tags:
+  - comments
+http:
+  method: POST
+  url: "{{baseUrl}}/api/v1/tasks/{{taskId}}/comments"
+  headers:
+  - name: Content-Type
+    value: "application/json"
+  - name: Authorization
+    value: "Bearer {{tokenA}}"
+  auth: inherit
+  body:
+    type: json
+    data: |-
+      {
+        "content": "@Member xem giup",
+        "mentionUserIds": [
+          "{{userBId}}"
+        ]
+      }
+runtime:
+  scripts:
+  - type: after-response
+    code: |
+      if (res.body && res.body.id) bru.setVar("commentId", res.body.id);
+  - type: tests
+    code: |
+      function readVar(name) {
+        try { var v = bru.getVar(name); if (v) return v; } catch (e) {}
+        return bru.getEnvVar(name);
+      }
+      
+      test("HTTP 201 expected", function () {
+        expect(res.status).to.equal(201);
+      });
+      test("đúng nội dung", function () { expect(res.body.content).to.equal("@Member xem giup"); });
+settings:
+  encodeUrl: true
+  timeout: 30000
+  followRedirects: true
+  maxRedirects: 5
+docs: |-
+  SIDE EFFECT: A bình luận + mention B (B nhận notification MENTION).

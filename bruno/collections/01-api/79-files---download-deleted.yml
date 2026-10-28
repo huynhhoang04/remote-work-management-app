@@ -1,0 +1,34 @@
+info:
+  name: 79 - Files - Download deleted
+  type: http
+  seq: 79
+  tags:
+  - files
+  - negative
+http:
+  method: GET
+  url: "{{baseUrl}}/api/v1/files/{{fileId}}"
+  headers:
+  - name: Authorization
+    value: "Bearer {{tokenA}}"
+  auth: inherit
+runtime:
+  scripts:
+  - type: tests
+    code: |
+      function readVar(name) {
+        try { var v = bru.getVar(name); if (v) return v; } catch (e) {}
+        return bru.getEnvVar(name);
+      }
+      
+      test("HTTP 404 expected", function () {
+        expect(res.status).to.equal(404);
+      });
+      test("mã lỗi file", function () { expect(res.body.code).to.equal("FILE_NOT_FOUND"); });
+settings:
+  encodeUrl: true
+  timeout: 30000
+  followRedirects: true
+  maxRedirects: 5
+docs: |-
+  Negative test: file đã xoá → 404.

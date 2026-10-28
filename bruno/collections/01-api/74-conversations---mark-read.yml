@@ -1,0 +1,40 @@
+info:
+  name: 74 - Conversations - Mark read
+  type: http
+  seq: 74
+  tags:
+  - chat
+http:
+  method: PATCH
+  url: "{{baseUrl}}/api/v1/conversations/{{groupConversationId}}/read"
+  headers:
+  - name: Content-Type
+    value: "application/json"
+  - name: Authorization
+    value: "Bearer {{tokenB}}"
+  auth: inherit
+  body:
+    type: json
+    data: |-
+      {
+        "lastReadMessageId": "{{messageId}}"
+      }
+runtime:
+  scripts:
+  - type: tests
+    code: |
+      function readVar(name) {
+        try { var v = bru.getVar(name); if (v) return v; } catch (e) {}
+        return bru.getEnvVar(name);
+      }
+      
+      test("HTTP 204 expected", function () {
+        expect(res.status).to.equal(204);
+      });
+settings:
+  encodeUrl: true
+  timeout: 30000
+  followRedirects: true
+  maxRedirects: 5
+docs: |-
+  SIDE EFFECT: cập nhật read receipt + broadcast WS.

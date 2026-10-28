@@ -1,0 +1,33 @@
+info:
+  name: 93 - Projects - Members
+  type: http
+  seq: 93
+  tags:
+  - projects
+http:
+  method: GET
+  url: "{{baseUrl}}/api/v1/projects/{{projectId}}/members"
+  headers:
+  - name: Authorization
+    value: "Bearer {{tokenA}}"
+  auth: inherit
+runtime:
+  scripts:
+  - type: tests
+    code: |
+      function readVar(name) {
+        try { var v = bru.getVar(name); if (v) return v; } catch (e) {}
+        return bru.getEnvVar(name);
+      }
+      
+      test("HTTP 200 expected", function () {
+        expect(res.status).to.equal(200);
+      });
+      test("B đang là VIEWER", function () { var id = readVar("userBId"); var m = res.body.filter(function (x) { return x.userId === id; }); expect(m[0].role).to.equal("VIEWER"); });
+settings:
+  encodeUrl: true
+  timeout: 30000
+  followRedirects: true
+  maxRedirects: 5
+docs: |-
+  Read-only.

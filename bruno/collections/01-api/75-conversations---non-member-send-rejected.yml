@@ -1,0 +1,42 @@
+info:
+  name: 75 - Conversations - Non-member send rejected
+  type: http
+  seq: 75
+  tags:
+  - chat
+  - negative
+http:
+  method: POST
+  url: "{{baseUrl}}/api/v1/conversations/{{groupConversationId}}/messages"
+  headers:
+  - name: Content-Type
+    value: "application/json"
+  - name: Authorization
+    value: "Bearer {{tokenC}}"
+  auth: inherit
+  body:
+    type: json
+    data: |-
+      {
+        "content": "Toi khong thuoc du an"
+      }
+runtime:
+  scripts:
+  - type: tests
+    code: |
+      function readVar(name) {
+        try { var v = bru.getVar(name); if (v) return v; } catch (e) {}
+        return bru.getEnvVar(name);
+      }
+      
+      test("HTTP 403 expected", function () {
+        expect(res.status).to.equal(403);
+      });
+      test("mã lỗi quyền", function () { expect(res.body.code).to.equal("PROJECT_FORBIDDEN"); });
+settings:
+  encodeUrl: true
+  timeout: 30000
+  followRedirects: true
+  maxRedirects: 5
+docs: |-
+  Negative test: C không phải thành viên dự án nên không gửi được vào kênh GROUP.

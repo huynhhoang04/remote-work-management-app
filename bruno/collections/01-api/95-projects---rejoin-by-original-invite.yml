@@ -1,0 +1,42 @@
+info:
+  name: 95 - Projects - Rejoin by original invite
+  type: http
+  seq: 95
+  tags:
+  - projects
+  - invites
+http:
+  method: POST
+  url: "{{baseUrl}}/api/v1/projects/join"
+  headers:
+  - name: Content-Type
+    value: "application/json"
+  - name: Authorization
+    value: "Bearer {{tokenB}}"
+  auth: inherit
+  body:
+    type: json
+    data: |-
+      {
+        "code": "{{inviteCode}}"
+      }
+runtime:
+  scripts:
+  - type: tests
+    code: |
+      function readVar(name) {
+        try { var v = bru.getVar(name); if (v) return v; } catch (e) {}
+        return bru.getEnvVar(name);
+      }
+      
+      test("HTTP 200 expected", function () {
+        expect(res.status).to.equal(200);
+      });
+      test("B trở lại với vai trò MEMBER", function () { expect(res.body.role).to.equal("MEMBER"); });
+settings:
+  encodeUrl: true
+  timeout: 30000
+  followRedirects: true
+  maxRedirects: 5
+docs: |-
+  SIDE EFFECT (idempotent): B dùng lại link mời gốc (request 15) để tham gia lại.

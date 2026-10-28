@@ -1,0 +1,43 @@
+info:
+  name: 40 - Tasks - Set assignees
+  type: http
+  seq: 40
+  tags:
+  - tasks
+http:
+  method: PATCH
+  url: "{{baseUrl}}/api/v1/tasks/{{taskId}}/assignees"
+  headers:
+  - name: Content-Type
+    value: "application/json"
+  - name: Authorization
+    value: "Bearer {{tokenA}}"
+  auth: inherit
+  body:
+    type: json
+    data: |-
+      {
+        "assigneeIds": [
+          "{{userBId}}"
+        ]
+      }
+runtime:
+  scripts:
+  - type: tests
+    code: |
+      function readVar(name) {
+        try { var v = bru.getVar(name); if (v) return v; } catch (e) {}
+        return bru.getEnvVar(name);
+      }
+      
+      test("HTTP 200 expected", function () {
+        expect(res.status).to.equal(200);
+      });
+      test("vẫn gán B", function () { expect(res.body.assignees.length).to.equal(1); });
+settings:
+  encodeUrl: true
+  timeout: 30000
+  followRedirects: true
+  maxRedirects: 5
+docs: |-
+  SIDE EFFECT: gửi danh sách assignee ĐẦY ĐỦ; chỉ người mới được thêm nhận thông báo.

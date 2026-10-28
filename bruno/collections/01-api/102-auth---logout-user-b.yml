@@ -1,0 +1,40 @@
+info:
+  name: 102 - Auth - Logout user B
+  type: http
+  seq: 102
+  tags:
+  - auth
+http:
+  method: POST
+  url: "{{baseUrl}}/api/v1/auth/logout"
+  headers:
+  - name: Content-Type
+    value: "application/json"
+  - name: Authorization
+    value: "Bearer {{tokenB}}"
+  auth: inherit
+  body:
+    type: json
+    data: |-
+      {
+        "refreshToken": "{{refreshTokenB}}"
+      }
+runtime:
+  scripts:
+  - type: tests
+    code: |
+      function readVar(name) {
+        try { var v = bru.getVar(name); if (v) return v; } catch (e) {}
+        return bru.getEnvVar(name);
+      }
+      
+      test("HTTP 204 expected", function () {
+        expect(res.status).to.equal(204);
+      });
+settings:
+  encodeUrl: true
+  timeout: 30000
+  followRedirects: true
+  maxRedirects: 5
+docs: |-
+  SIDE EFFECT: thu hồi toàn bộ refresh token của B.

@@ -1,0 +1,42 @@
+info:
+  name: 92 - Projects - Update
+  type: http
+  seq: 92
+  tags:
+  - projects
+http:
+  method: PATCH
+  url: "{{baseUrl}}/api/v1/projects/{{projectId}}"
+  headers:
+  - name: Content-Type
+    value: "application/json"
+  - name: Authorization
+    value: "Bearer {{tokenA}}"
+  auth: inherit
+  body:
+    type: json
+    data: |-
+      {
+        "name": "Do an Mobile (Bruno)",
+        "description": "Da cap nhat"
+      }
+runtime:
+  scripts:
+  - type: tests
+    code: |
+      function readVar(name) {
+        try { var v = bru.getVar(name); if (v) return v; } catch (e) {}
+        return bru.getEnvVar(name);
+      }
+      
+      test("HTTP 200 expected", function () {
+        expect(res.status).to.equal(200);
+      });
+      test("tên mới", function () { expect(res.body.name).to.equal("Do an Mobile (Bruno)"); });
+settings:
+  encodeUrl: true
+  timeout: 30000
+  followRedirects: true
+  maxRedirects: 5
+docs: |-
+  SIDE EFFECT: Owner sửa dự án (positive case; negative ở request 19).

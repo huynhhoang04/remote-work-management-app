@@ -1,0 +1,43 @@
+info:
+  name: 88 - Invites - Create second link
+  type: http
+  seq: 88
+  tags:
+  - invites
+http:
+  method: POST
+  url: "{{baseUrl}}/api/v1/projects/{{projectId}}/invites"
+  headers:
+  - name: Content-Type
+    value: "application/json"
+  - name: Authorization
+    value: "Bearer {{tokenA}}"
+  auth: inherit
+  body:
+    type: json
+    data: |-
+      {}
+runtime:
+  scripts:
+  - type: after-response
+    code: |
+      if (res.body && res.body.id) bru.setVar("inviteId2", res.body.id);
+      if (res.body && res.body.code) bru.setVar("inviteCode2", res.body.code);
+  - type: tests
+    code: |
+      function readVar(name) {
+        try { var v = bru.getVar(name); if (v) return v; } catch (e) {}
+        return bru.getEnvVar(name);
+      }
+      
+      test("HTTP 201 expected", function () {
+        expect(res.status).to.equal(201);
+      });
+      test("mã 12 ký tự", function () { expect(res.body.code).to.match(/^[A-Z0-9]{12}$/); });
+settings:
+  encodeUrl: true
+  timeout: 30000
+  followRedirects: true
+  maxRedirects: 5
+docs: |-
+  SIDE EFFECT: tạo link mời thứ hai (A là OWNER).

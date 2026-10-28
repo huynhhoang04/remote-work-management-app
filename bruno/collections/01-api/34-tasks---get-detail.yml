@@ -1,0 +1,33 @@
+info:
+  name: 34 - Tasks - Get detail
+  type: http
+  seq: 34
+  tags:
+  - tasks
+http:
+  method: GET
+  url: "{{baseUrl}}/api/v1/tasks/{{taskId}}"
+  headers:
+  - name: Authorization
+    value: "Bearer {{tokenA}}"
+  auth: inherit
+runtime:
+  scripts:
+  - type: tests
+    code: |
+      function readVar(name) {
+        try { var v = bru.getVar(name); if (v) return v; } catch (e) {}
+        return bru.getEnvVar(name);
+      }
+      
+      test("HTTP 200 expected", function () {
+        expect(res.status).to.equal(200);
+      });
+      test("có assignee + nhãn", function () { expect(res.body.assignees.length).to.equal(1); expect(res.body.labels.length).to.equal(1); });
+settings:
+  encodeUrl: true
+  timeout: 30000
+  followRedirects: true
+  maxRedirects: 5
+docs: |-
+  Read-only.

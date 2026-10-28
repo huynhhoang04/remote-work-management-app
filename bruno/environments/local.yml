@@ -1,0 +1,53 @@
+name: local
+variables:
+  - name: baseUrl
+    value: http://localhost:8080
+    description: Backend base URL. Local = loopback (chạy `cd backend && ./mvnw spring-boot:run`); target deploy dùng environments/render.yml.
+  - name: inputEmailA
+    value: huynh696k@gmail.com
+    description: Email tài khoản A — BẠN nhập (không script nào ghi vào biến này). Chạy lại cả collection cần email mới hoặc DB sạch, nếu không request 01 trả 409.
+  - name: inputEmailB
+    value: lolvn404@gmail.com
+    description: Email tài khoản B — BẠN nhập. Phải KHÁC inputEmailA.
+  - name: inputEmailC
+    value: ""
+    description: Email tài khoản C (ngoài mọi dự án) — dùng cho test 403/INVITE_INVALID. Phải KHÁC A và B.
+  - name: inputShortPwEmail
+    value: ""
+    description: Email riêng cho request 24 (mật khẩu < 8 ký tự) — BẠN nhập; mật khẩu ngắn bị chặn trước khi kiểm trùng email nên email này không cần tồn tại.
+  - secret: true
+    name: inputPasswordA
+    description: Mật khẩu tài khoản A (>= 8 ký tự) — BẠN nhập ở tab Secret Variables.
+  - secret: true
+    name: inputPasswordB
+    description: Mật khẩu tài khoản B (>= 8 ký tự) — BẠN nhập ở tab Secret Variables.
+  - secret: true
+    name: inputPasswordC
+    description: Mật khẩu tài khoản C (>= 8 ký tự) — BẠN nhập ở tab Secret Variables.
+  - secret: true
+    name: inputNewPasswordA
+    description: Mật khẩu mới cho request 11 (đổi mật khẩu, >= 8 ký tự) — BẠN nhập ở tab Secret Variables.
+  - name: inputResetToken
+    value: ""
+    description: Token đặt lại mật khẩu lấy từ email — mở mailpit UI http://localhost:8025, xem tin của request 08, copy phần sau `app://reset?token=` rồi dán vào đây. BẠN nhập; collection 02-auth-reset dùng biến này.
+  - secret: true
+    name: inputResetPassword
+    description: Mật khẩu mới đặt lại qua email — BẠN nhập ở tab Secret Variables.
+  - name: inputFcmToken
+    value: fcm-device-1
+    description: FCM token giả cho request 09/10 — BẠN nhập/sửa (DB unique theo token; gửi lại cùng token là upsert).
+  - name: inputUploadFile
+    value: fixtures/sample.txt
+    description: Đường dẫn file cho request upload đính kèm (multipart). Chạy bằng run.sh sẽ tự truyền đường dẫn tuyệt đối; trong Bruno app hãy chọn file thật.
+  - name: inputAvatarFile
+    value: fixtures/sample.png
+    description: Đường dẫn ảnh cho request upload avatar (multipart). Chạy bằng run.sh sẽ tự truyền đường dẫn tuyệt đối.
+  - name: projectId
+    value: ""
+    description: KẾT QUẢ request 12 bắt vào runtime (không phải biến đầu vào). Điền sẵn ở đây cũng được — script chỉ ghi khi biến này đang trống.
+  - name: projectBId
+    value: ""
+    description: KẾT QUẢ request 26 bắt vào runtime.
+  - name: inviteCode
+    value: ""
+    description: KẾT QUẢ request 15 bắt vào runtime.

@@ -1,0 +1,33 @@
+info:
+  name: 66 - Notifications - Unread count back to zero
+  type: http
+  seq: 66
+  tags:
+  - notifications
+http:
+  method: GET
+  url: "{{baseUrl}}/api/v1/notifications/unread-count"
+  headers:
+  - name: Authorization
+    value: "Bearer {{tokenB}}"
+  auth: inherit
+runtime:
+  scripts:
+  - type: tests
+    code: |
+      function readVar(name) {
+        try { var v = bru.getVar(name); if (v) return v; } catch (e) {}
+        return bru.getEnvVar(name);
+      }
+      
+      test("HTTP 200 expected", function () {
+        expect(res.status).to.equal(200);
+      });
+      test("đã đọc hết", function () { expect(res.body.count).to.equal(0); });
+settings:
+  encodeUrl: true
+  timeout: 30000
+  followRedirects: true
+  maxRedirects: 5
+docs: |-
+  Read-only.

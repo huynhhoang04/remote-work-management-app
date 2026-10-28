@@ -1,0 +1,33 @@
+info:
+  name: 54 - Schedule - List range
+  type: http
+  seq: 54
+  tags:
+  - schedule
+http:
+  method: GET
+  url: "{{baseUrl}}/api/v1/schedule/events?from=2026-12-01T00:00:00Z&to=2027-01-31T00:00:00Z"
+  headers:
+  - name: Authorization
+    value: "Bearer {{tokenA}}"
+  auth: inherit
+runtime:
+  scripts:
+  - type: tests
+    code: |
+      function readVar(name) {
+        try { var v = bru.getVar(name); if (v) return v; } catch (e) {}
+        return bru.getEnvVar(name);
+      }
+      
+      test("HTTP 200 expected", function () {
+        expect(res.status).to.equal(200);
+      });
+      test("chứa sự kiện vừa tạo", function () { var id = readVar("eventId"); expect(res.body.some(function (e) { return e.id === id; })).to.equal(true); });
+settings:
+  encodeUrl: true
+  timeout: 30000
+  followRedirects: true
+  maxRedirects: 5
+docs: |-
+  Read-only: lọc theo khoảng from/to (ISO-8601).

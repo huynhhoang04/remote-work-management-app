@@ -1,0 +1,44 @@
+info:
+  name: 72 - Conversations - Send direct message
+  type: http
+  seq: 72
+  tags:
+  - chat
+http:
+  method: POST
+  url: "{{baseUrl}}/api/v1/conversations/{{directConversationId}}/messages"
+  headers:
+  - name: Content-Type
+    value: "application/json"
+  - name: Authorization
+    value: "Bearer {{tokenA}}"
+  auth: inherit
+  body:
+    type: json
+    data: |-
+      {
+        "content": "Tin nhan rieng",
+        "clientMessageId": "33333333-3333-3333-3333-333333333333"
+      }
+runtime:
+  scripts:
+  - type: after-response
+    code: |
+      if (res.body && res.body.id) bru.setVar("directMessageId", res.body.id);
+  - type: tests
+    code: |
+      function readVar(name) {
+        try { var v = bru.getVar(name); if (v) return v; } catch (e) {}
+        return bru.getEnvVar(name);
+      }
+      
+      test("HTTP 201 expected", function () {
+        expect(res.status).to.equal(201);
+      });
+settings:
+  encodeUrl: true
+  timeout: 30000
+  followRedirects: true
+  maxRedirects: 5
+docs: |-
+  SIDE EFFECT: gửi tin 1-1 kèm clientMessageId (idempotent).

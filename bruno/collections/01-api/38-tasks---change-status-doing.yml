@@ -1,0 +1,41 @@
+info:
+  name: 38 - Tasks - Change status DOING
+  type: http
+  seq: 38
+  tags:
+  - tasks
+http:
+  method: PATCH
+  url: "{{baseUrl}}/api/v1/tasks/{{taskId}}/status"
+  headers:
+  - name: Content-Type
+    value: "application/json"
+  - name: Authorization
+    value: "Bearer {{tokenA}}"
+  auth: inherit
+  body:
+    type: json
+    data: |-
+      {
+        "status": "DOING"
+      }
+runtime:
+  scripts:
+  - type: tests
+    code: |
+      function readVar(name) {
+        try { var v = bru.getVar(name); if (v) return v; } catch (e) {}
+        return bru.getEnvVar(name);
+      }
+      
+      test("HTTP 200 expected", function () {
+        expect(res.status).to.equal(200);
+      });
+      test("trạng thái DOING", function () { expect(res.body.status).to.equal("DOING"); });
+settings:
+  encodeUrl: true
+  timeout: 30000
+  followRedirects: true
+  maxRedirects: 5
+docs: |-
+  SIDE EFFECT: đổi trạng thái Kanban.

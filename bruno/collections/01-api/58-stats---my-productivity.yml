@@ -1,0 +1,34 @@
+info:
+  name: 58 - Stats - My productivity
+  type: http
+  seq: 58
+  tags:
+  - stats
+http:
+  method: GET
+  url: "{{baseUrl}}/api/v1/me/stats?from=2026-10-01T00:00:00Z&to=2027-01-31T00:00:00Z"
+  headers:
+  - name: Authorization
+    value: "Bearer {{tokenA}}"
+  auth: inherit
+runtime:
+  scripts:
+  - type: tests
+    code: |
+      function readVar(name) {
+        try { var v = bru.getVar(name); if (v) return v; } catch (e) {}
+        return bru.getEnvVar(name);
+      }
+      
+      test("HTTP 200 expected", function () {
+        expect(res.status).to.equal(200);
+      });
+      test("có chuỗi theo ngày/tuần/tháng", function () { expect(res.body.completedPerDay).to.be.an("array"); expect(res.body.completedPerWeek).to.be.an("array"); expect(res.body.completedPerMonth).to.be.an("array"); });
+      test("tỉ lệ đúng hạn là số", function () { expect(res.body.onTimeRate).to.be.a("number"); });
+settings:
+  encodeUrl: true
+  timeout: 30000
+  followRedirects: true
+  maxRedirects: 5
+docs: |-
+  Read-only: số task hoàn thành theo kỳ + tỉ lệ đúng hạn.

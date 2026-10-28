@@ -1,0 +1,33 @@
+info:
+  name: 69 - Conversations - Messages
+  type: http
+  seq: 69
+  tags:
+  - chat
+http:
+  method: GET
+  url: "{{baseUrl}}/api/v1/conversations/{{groupConversationId}}/messages?size=20"
+  headers:
+  - name: Authorization
+    value: "Bearer {{tokenB}}"
+  auth: inherit
+runtime:
+  scripts:
+  - type: tests
+    code: |
+      function readVar(name) {
+        try { var v = bru.getVar(name); if (v) return v; } catch (e) {}
+        return bru.getEnvVar(name);
+      }
+      
+      test("HTTP 200 expected", function () {
+        expect(res.status).to.equal(200);
+      });
+      test("B đọc được tin của A", function () { var id = readVar("messageId"); expect(res.body.some(function (m) { return m.id === id; })).to.equal(true); });
+settings:
+  encodeUrl: true
+  timeout: 30000
+  followRedirects: true
+  maxRedirects: 5
+docs: |-
+  Read-only: lịch sử tin (phân trang ngược, trả tăng dần).

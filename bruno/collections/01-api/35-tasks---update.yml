@@ -1,0 +1,47 @@
+info:
+  name: 35 - Tasks - Update
+  type: http
+  seq: 35
+  tags:
+  - tasks
+http:
+  method: PATCH
+  url: "{{baseUrl}}/api/v1/tasks/{{taskId}}"
+  headers:
+  - name: Content-Type
+    value: "application/json"
+  - name: Authorization
+    value: "Bearer {{tokenA}}"
+  auth: inherit
+  body:
+    type: json
+    data: |-
+      {
+        "title": "Lam bao cao (updated)",
+        "priority": "URGENT",
+        "version": 0
+      }
+runtime:
+  scripts:
+  - type: after-response
+    code: |
+      if (res.body && typeof res.body.version === "number") bru.setVar("taskVersion", res.body.version);
+  - type: tests
+    code: |
+      function readVar(name) {
+        try { var v = bru.getVar(name); if (v) return v; } catch (e) {}
+        return bru.getEnvVar(name);
+      }
+      
+      test("HTTP 200 expected", function () {
+        expect(res.status).to.equal(200);
+      });
+      test("tiêu đề đã đổi", function () { expect(res.body.title).to.equal("Lam bao cao (updated)"); });
+      test("version tăng", function () { expect(res.body.version).to.be.at.least(1); });
+settings:
+  encodeUrl: true
+  timeout: 30000
+  followRedirects: true
+  maxRedirects: 5
+docs: |-
+  SIDE EFFECT: cập nhật task với version 0 (bắt từ request 32).

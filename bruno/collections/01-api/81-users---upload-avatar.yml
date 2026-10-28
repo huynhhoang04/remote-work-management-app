@@ -1,0 +1,41 @@
+info:
+  name: 81 - Users - Upload avatar
+  type: http
+  seq: 81
+  tags:
+  - users
+http:
+  method: POST
+  url: "{{baseUrl}}/api/v1/users/me/avatar"
+  headers:
+  - name: Authorization
+    value: "Bearer {{tokenA}}"
+  auth: inherit
+  body:
+    type: multipart-form
+    data:
+    - name: file
+      type: file
+      value:
+      - "{{inputAvatarFile}}"
+      contentType: image/png
+runtime:
+  scripts:
+  - type: tests
+    code: |
+      function readVar(name) {
+        try { var v = bru.getVar(name); if (v) return v; } catch (e) {}
+        return bru.getEnvVar(name);
+      }
+      
+      test("HTTP 200 expected", function () {
+        expect(res.status).to.equal(200);
+      });
+      test("avatarUrl trỏ file API", function () { expect(res.body.avatarUrl).to.contain("/api/v1/files/"); });
+settings:
+  encodeUrl: true
+  timeout: 30000
+  followRedirects: true
+  maxRedirects: 5
+docs: |-
+  SIDE EFFECT: upload avatar (chỉ ảnh ≤ 5MB).

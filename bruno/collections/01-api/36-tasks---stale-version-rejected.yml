@@ -1,0 +1,43 @@
+info:
+  name: 36 - Tasks - Stale version rejected
+  type: http
+  seq: 36
+  tags:
+  - tasks
+  - negative
+http:
+  method: PATCH
+  url: "{{baseUrl}}/api/v1/tasks/{{taskId}}"
+  headers:
+  - name: Content-Type
+    value: "application/json"
+  - name: Authorization
+    value: "Bearer {{tokenA}}"
+  auth: inherit
+  body:
+    type: json
+    data: |-
+      {
+        "title": "Ghi de",
+        "version": 0
+      }
+runtime:
+  scripts:
+  - type: tests
+    code: |
+      function readVar(name) {
+        try { var v = bru.getVar(name); if (v) return v; } catch (e) {}
+        return bru.getEnvVar(name);
+      }
+      
+      test("HTTP 409 expected", function () {
+        expect(res.status).to.equal(409);
+      });
+      test("mã lỗi xung đột phiên bản", function () { expect(res.body.code).to.equal("TASK_VERSION_CONFLICT"); });
+settings:
+  encodeUrl: true
+  timeout: 30000
+  followRedirects: true
+  maxRedirects: 5
+docs: |-
+  Negative test: version cũ → 409, client phải tải lại task.

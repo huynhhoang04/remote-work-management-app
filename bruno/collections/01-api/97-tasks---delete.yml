@@ -1,0 +1,32 @@
+info:
+  name: 97 - Tasks - Delete
+  type: http
+  seq: 97
+  tags:
+  - tasks
+http:
+  method: DELETE
+  url: "{{baseUrl}}/api/v1/tasks/{{taskId}}"
+  headers:
+  - name: Authorization
+    value: "Bearer {{tokenA}}"
+  auth: inherit
+runtime:
+  scripts:
+  - type: tests
+    code: |
+      function readVar(name) {
+        try { var v = bru.getVar(name); if (v) return v; } catch (e) {}
+        return bru.getEnvVar(name);
+      }
+      
+      test("HTTP 204 expected", function () {
+        expect(res.status).to.equal(204);
+      });
+settings:
+  encodeUrl: true
+  timeout: 30000
+  followRedirects: true
+  maxRedirects: 5
+docs: |-
+  SIDE EFFECT: xoá mềm task + subtask.

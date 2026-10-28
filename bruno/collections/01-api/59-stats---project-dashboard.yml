@@ -1,0 +1,35 @@
+info:
+  name: 59 - Stats - Project dashboard
+  type: http
+  seq: 59
+  tags:
+  - stats
+http:
+  method: GET
+  url: "{{baseUrl}}/api/v1/projects/{{projectId}}/stats"
+  headers:
+  - name: Authorization
+    value: "Bearer {{tokenA}}"
+  auth: inherit
+runtime:
+  scripts:
+  - type: tests
+    code: |
+      function readVar(name) {
+        try { var v = bru.getVar(name); if (v) return v; } catch (e) {}
+        return bru.getEnvVar(name);
+      }
+      
+      test("HTTP 200 expected", function () {
+        expect(res.status).to.equal(200);
+      });
+      test("có tổng task", function () { expect(res.body.totalTasks).to.be.at.least(1); });
+      test("có % hoàn thành", function () { expect(res.body.percentDone).to.be.a("number"); });
+      test("có thống kê thành viên", function () { expect(res.body.perMember.length).to.be.at.least(2); });
+settings:
+  encodeUrl: true
+  timeout: 30000
+  followRedirects: true
+  maxRedirects: 5
+docs: |-
+  Read-only. VIEWER cũng xem được (test ở request 108).

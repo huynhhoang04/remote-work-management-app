@@ -1,0 +1,33 @@
+info:
+  name: 31 - Labels - List
+  type: http
+  seq: 31
+  tags:
+  - labels
+http:
+  method: GET
+  url: "{{baseUrl}}/api/v1/projects/{{projectId}}/labels"
+  headers:
+  - name: Authorization
+    value: "Bearer {{tokenA}}"
+  auth: inherit
+runtime:
+  scripts:
+  - type: tests
+    code: |
+      function readVar(name) {
+        try { var v = bru.getVar(name); if (v) return v; } catch (e) {}
+        return bru.getEnvVar(name);
+      }
+      
+      test("HTTP 200 expected", function () {
+        expect(res.status).to.equal(200);
+      });
+      test("có ít nhất 1 nhãn", function () { expect(res.body.length).to.be.at.least(1); });
+settings:
+  encodeUrl: true
+  timeout: 30000
+  followRedirects: true
+  maxRedirects: 5
+docs: |-
+  Read-only.

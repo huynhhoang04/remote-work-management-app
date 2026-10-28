@@ -1,0 +1,43 @@
+info:
+  name: 27 - Auth - Register user C
+  type: http
+  seq: 27
+  tags:
+  - auth
+  - setup
+http:
+  method: POST
+  url: "{{baseUrl}}/api/v1/auth/register"
+  headers:
+  - name: Content-Type
+    value: "application/json"
+  auth: inherit
+  body:
+    type: json
+    data: |-
+      {
+        "email": "{{inputEmailC}}",
+        "password": "{{inputPasswordC}}",
+        "fullName": "User C"
+      }
+runtime:
+  scripts:
+  - type: tests
+    code: |
+      function readVar(name) {
+        try { var v = bru.getVar(name); if (v) return v; } catch (e) {}
+        return bru.getEnvVar(name);
+      }
+      
+      test("HTTP 201 expected", function () {
+        expect(res.status).to.equal(201);
+      });
+      test("trả về email C", function () { expect(res.body.email).to.equal(bru.getEnvVar("inputEmailC")); });
+settings:
+  encodeUrl: true
+  timeout: 30000
+  followRedirects: true
+  maxRedirects: 5
+docs: |-
+  SIDE EFFECT: tạo tài khoản C (không thuộc dự án nào) để test 403.
+  Email/mật khẩu do BẠN nhập trong environment.

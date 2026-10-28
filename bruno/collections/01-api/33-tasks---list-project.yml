@@ -1,0 +1,33 @@
+info:
+  name: 33 - Tasks - List project
+  type: http
+  seq: 33
+  tags:
+  - tasks
+http:
+  method: GET
+  url: "{{baseUrl}}/api/v1/projects/{{projectId}}/tasks"
+  headers:
+  - name: Authorization
+    value: "Bearer {{tokenA}}"
+  auth: inherit
+runtime:
+  scripts:
+  - type: tests
+    code: |
+      function readVar(name) {
+        try { var v = bru.getVar(name); if (v) return v; } catch (e) {}
+        return bru.getEnvVar(name);
+      }
+      
+      test("HTTP 200 expected", function () {
+        expect(res.status).to.equal(200);
+      });
+      test("danh sách chứa task vừa tạo", function () { var id = readVar("taskId"); expect(res.body.some(function (t) { return t.id === id; })).to.equal(true); });
+settings:
+  encodeUrl: true
+  timeout: 30000
+  followRedirects: true
+  maxRedirects: 5
+docs: |-
+  Read-only. Backend trả toàn bộ task gốc; client tự sort/filter (docs/04 §1.3).

@@ -1,0 +1,45 @@
+info:
+  name: 55 - Schedule - Update
+  type: http
+  seq: 55
+  tags:
+  - schedule
+http:
+  method: PATCH
+  url: "{{baseUrl}}/api/v1/schedule/events/{{eventId}}"
+  headers:
+  - name: Content-Type
+    value: "application/json"
+  - name: Authorization
+    value: "Bearer {{tokenA}}"
+  auth: inherit
+  body:
+    type: json
+    data: |-
+      {
+        "title": "Hop nhom (doi gio)",
+        "description": "Hop tien do",
+        "startTime": "2026-12-05T04:00:00Z",
+        "endTime": "2026-12-05T05:00:00Z",
+        "taskId": "{{taskId}}"
+      }
+runtime:
+  scripts:
+  - type: tests
+    code: |
+      function readVar(name) {
+        try { var v = bru.getVar(name); if (v) return v; } catch (e) {}
+        return bru.getEnvVar(name);
+      }
+      
+      test("HTTP 200 expected", function () {
+        expect(res.status).to.equal(200);
+      });
+      test("tiêu đề đã đổi", function () { expect(res.body.title).to.equal("Hop nhom (doi gio)"); });
+settings:
+  encodeUrl: true
+  timeout: 30000
+  followRedirects: true
+  maxRedirects: 5
+docs: |-
+  SIDE EFFECT: sửa sự kiện (chỉ chủ sở hữu).

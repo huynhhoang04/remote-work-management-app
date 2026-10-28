@@ -1,0 +1,59 @@
+info:
+  name: 32 - Tasks - Create
+  type: http
+  seq: 32
+  tags:
+  - tasks
+http:
+  method: POST
+  url: "{{baseUrl}}/api/v1/tasks"
+  headers:
+  - name: Content-Type
+    value: "application/json"
+  - name: Authorization
+    value: "Bearer {{tokenA}}"
+  auth: inherit
+  body:
+    type: json
+    data: |-
+      {
+        "projectId": "{{projectId}}",
+        "title": "Lam bao cao",
+        "description": "Mo ta task",
+        "status": "TODO",
+        "priority": "HIGH",
+        "startDate": "2026-12-01T00:00:00Z",
+        "deadline": "2026-12-31T00:00:00Z",
+        "labelIds": [
+          "{{labelId}}"
+        ],
+        "assigneeIds": [
+          "{{userBId}}"
+        ]
+      }
+runtime:
+  scripts:
+  - type: after-response
+    code: |
+      if (res.body && res.body.id) bru.setVar("taskId", res.body.id);
+      if (res.body && typeof res.body.version === "number") bru.setVar("taskVersion", res.body.version);
+  - type: tests
+    code: |
+      function readVar(name) {
+        try { var v = bru.getVar(name); if (v) return v; } catch (e) {}
+        return bru.getEnvVar(name);
+      }
+      
+      test("HTTP 201 expected", function () {
+        expect(res.status).to.equal(201);
+      });
+      test("task gán cho B", function () { expect(res.body.assignees.length).to.equal(1); });
+      test("có nhãn Bug", function () { expect(res.body.labels[0].name).to.equal("Bug"); });
+      test("bắt đầu ở TODO", function () { expect(res.body.status).to.equal("TODO"); });
+settings:
+  encodeUrl: true
+  timeout: 30000
+  followRedirects: true
+  maxRedirects: 5
+docs: |-
+  SIDE EFFECT: tạo task + gán B (B nhận notification TASK_ASSIGNED).
