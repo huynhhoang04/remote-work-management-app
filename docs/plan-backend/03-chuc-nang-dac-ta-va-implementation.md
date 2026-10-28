@@ -73,7 +73,8 @@
 - `GET /projects` chỉ trả dự án mình là thành viên.
 
 **Implementation**
-- `ProjectService` CRUD trên `projects`; membership check qua `project_members`. Khi tạo dự án → tạo luôn **kênh chat GROUP mặc định** (gọi `ChatService.createGroupConversation`) + audit `PROJECT_CREATED`.
+- `ProjectService` CRUD trên `projects`; membership check qua `project_members`; audit `PROJECT_CREATED`.
+- **Không gọi `chat` khi tạo dự án** (tránh circular bean). Kênh GROUP được tạo lazy ở lần truy cập đầu bởi `ChatService.ensureGroupConversation` (xem §F1).
 
 ### B2. Phân quyền RBAC (G01)
 
@@ -154,11 +155,12 @@
 ### D2. "Hôm nay" (C02)
 
 **Đặc tả**
-- Trả 4 nhóm trong 1 call: `overdueTasks` (quá hạn, chưa DONE), `dueTodayTasks`, `upcomingTasks` (7 ngày tới), `todayEvents`.
+- Trả 4 nhóm trong 1 call: `overdueTasks` (quá hạn **trước hôm nay**, chưa DONE), `dueTodayTasks` (hạn hôm nay), `upcomingTasks` (7 ngày tới), `todayEvents`.
 - Ngày tính theo timezone cấu hình (mặc định `Asia/Ho_Chi_Minh`).
+- Quá hạn = `deadline < startOfToday`; `dueToday` = `[startOfToday, startOfTomorrow)`; `upcoming` = `[startOfTomorrow, startOfTomorrow + 7 ngày)` → không trùng nhóm.
 
 **Implementation**
-- `StatsService.getToday`: 3 query `TaskRepository` (deadline < hôm nay / hôm nay / 7 ngày tới, theo assignee) + 1 query `ScheduleEventRepository` (sự kiện hôm nay) → gộp vào `TodayDto`.
+- `StatsService.getToday`: `StatsRepository` (JdbcTemplate) query task theo assignee + sự kiện hôm nay → gộp vào `TodayResponse`.
 
 ### D3. Thống kê (C01, C04, C05)
 
@@ -178,15 +180,18 @@
 
 **Đặc tả**
 - Mốc **cố định**: `REMIND_1D` (trước 1 ngày), `REMIND_1H` (trước 1 giờ), `OVERDUE` (quá hạn, chưa DONE).
-- **Không gửi trùng:** mỗi (task, user, mốc) chỉ 1 lần.
+- **Không gửi trùng:** mỗi (task, user, mốc) chỉ 1 lần; riêng `OVERDUE` nhắc **1 lần/ngày** cho tới khi DONE.
 - Task không có assignee → nhắc **người tạo**. Task không có deadline → bỏ qua.
 
 **Implementation**
-- `ReminderScheduler` (`@Scheduled(fixedDelay = 5 phút)`):
-  1. Query task có `deadline ∈ [now+1d, now+1d+5p]`, chưa DONE → với mỗi assignee: tạo notification `REMIND_1D` **nếu chưa có** (check `exists` trước khi insert; ràng buộc `UNIQUE(task_id, user_id, type)` trong `notifications` là chốt chặn cuối).
-  2. Tương tự với `REMIND_1D` → `REMIND_1H` với cửa sổ `[now+1h, now+1h+5p]`.
-  3. Task `deadline < now`, `status != DONE`, chưa có `OVERDUE` → tạo `OVERDUE`.
-- Mỗi notification tạo xong → `FcmService.push`. Gửi FCM lỗi → notification vẫn nằm trong trung tâm thông báo.
+- `ReminderScheduler` (`@Scheduled(fixedDelay = app.reminder.interval-ms)`, mặc định 5 phút, hoãn lần đầu 60s):
+  1. Query task có `deadline ∈ [now+1d, now+1d+interval)`, chưa DONE → với mỗi assignee: tạo notification `REMIND_1D` nếu chưa có.
+  2. Tương tự với `REMIND_1H` với cửa sổ `[now+1h, now+1h+interval)`.
+  3. Task `deadline < now`, `status != DONE` → tạo `OVERDUE` (dedupe theo ngày).
+- **Chống trùng:** `notifications.dedupe_key` UNIQUE partial index. Key: `{TYPE}:{taskId}:{userId}`;
+  `OVERDUE:{taskId}:{userId}:{yyyy-MM-dd}`.
+- Mỗi notification tạo xong → `PushSender` (FCM hoặc no-op). Gửi FCM lỗi → notification vẫn nằm trong trung tâm thông báo.
+- Query đọc task/assignee nằm ở `ReminderRepository` (JdbcTemplate) — ngoại lệ đọc tổng hợp, không sửa dữ liệu task.
 
 ### E2. Trung tâm thông báo + push (E02, E03)
 
@@ -196,8 +201,8 @@
 - Push FCM tiếng Việt, bấm vào deep-link tới task/hội thoại (payload `refType`, `refId`).
 
 **Implementation**
-- `NotificationService.notify(userId, type, title, body, refType, refId)`: insert `notifications` (kiểm tra unique cho loại nhắc) → push qua `FcmService` đến mọi device của user.
-- `FcmService`: firebase-admin, gửi multicast; token hỏng → xóa device.
+- `NotificationService.notify(userId, type, title, body, refType, refId, dedupeKey)`: insert `notifications` (bỏ qua nếu trùng `dedupeKey`) → WebSocket `/user/queue/notifications` → push qua `PushSender`.
+- `PushSender`: `FcmPushSender` (firebase-admin, multicast, token hỏng → xoá device) khi `FCM_ENABLED=true`; ngược lại `NoopPushSender` chỉ log.
 
 ---
 
@@ -206,13 +211,15 @@
 ### F1. Hội thoại
 
 **Đặc tả**
-- `GROUP`: 1 kênh/1 dự án, tự tạo khi tạo dự án; thành viên = thành viên dự án (tự động đồng bộ khi thêm/xóa thành viên dự án).
+- `GROUP`: 1 kênh/1 dự án, tạo **lazy** ở lần truy cập đầu; thành viên = thành viên dự án (lấy realtime từ `project_members`, không cần đồng bộ bảng thành viên chat).
 - `DIRECT`: 1-1 theo cặp user, **idempotent** (gọi lại vẫn trả cùng 1 hội thoại).
 - Mỗi hội thoại có `last_read_message_id` theo từng thành viên → **unreadCount** = số tin sau mốc đó (trừ tin của mình).
 
 **Implementation**
-- `conversations(project_id, type)` + `conversation_members(last_read_message_id)`.
-- `ChatService.createDirectConversation(userA, userB)`: `UNIQUE` theo khoá cặp user đã sắp xếp (`direct_key = minId + "_" + maxId`) — tránh tạo trùng.
+- `conversations(project_id, type, direct_key)` + `conversation_members(last_read_message_id)`.
+- `ChatService.ensureGroupConversation(projectId)` + `UNIQUE(project_id) WHERE type='GROUP'` chống tạo trùng.
+- `ChatService.createDirect(actorId, targetUserId)`: `direct_key = minId + "_" + maxId`, UNIQUE — tránh tạo trùng.
+- GROUP: đọc = `requireMember`, gửi = `requireRole(MEMBER)` (VIEWER không gửi được). DIRECT: kiểm `conversation_members` → `CONVERSATION_FORBIDDEN`.
 
 ### F2. Gửi/nhận tin nhắn (realtime)
 
@@ -252,9 +259,12 @@
 - Quyền tải: thành viên dự án chứa file (file cá nhân như avatar: mọi người đã đăng nhập).
 
 **Implementation**
-- Interface `StorageService` + `LocalStorageService` (lưu `uploads/{uuid}.{ext}`, env `UPLOAD_DIR`) — mai sau thay `S3StorageService` mà không đổi API.
+- Interface `StorageService` với 2 implementation:
+  - `SupabaseStorageService` (`STORAGE_TYPE=supabase`): REST Supabase Storage, object key `{uuid}.{ext}`.
+  - `LocalStorageService` (`STORAGE_TYPE=local`, mặc định): lưu `uploads/{uuid}.{ext}`, env `UPLOAD_DIR` — chỉ dev/test.
 - `files` row: `owner_id, project_id, task_id, message_id, name, mime_type, size, storage_key`.
-- `FileController.download`: `FileSystemResource` + header `Content-Disposition`.
+- `FileController.download`: proxy qua backend (`InputStreamResource`) + `Content-Disposition`, kiểm quyền dự án.
+- Avatar: `POST /users/me/avatar` → `FileService.storeAvatar` (chỉ ảnh ≤ 5MB) → `users.avatar_url = /api/v1/files/{id}`.
 
 ---
 
@@ -270,3 +280,6 @@
 | 6 | Chat WS (F1–F2) + Audit đầy đủ (G) | |
 
 **Kiểm thử:** mỗi service viết unit test (Mockito) cho luật nghiệp vụ chính (phân quyền, validate deadline, idempotent chat, nhắc không trùng); integration test repository bằng Testcontainers PostgreSQL cho query thống kê.
+
+> **Trạng thái:** cả 6 bước đã hoàn thành. Bàn giao chi tiết (file map, 65 route, 74 test):
+> `docs/plan-backend/04-tong-ket-trien-khai-backend.md`.

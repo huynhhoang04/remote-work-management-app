@@ -1,7 +1,7 @@
 # Ứng dụng Quản lý & Theo dõi Làm việc Từ xa
 
 > **Đồ án Mobile App — Đề tài 21**
-> Android native (Kotlin) · Backend Java 21 + Spring Boot · PostgreSQL
+> React Native (Expo + TypeScript) · Backend Java 21 + Spring Boot · PostgreSQL
 
 Ứng dụng mobile giúp cá nhân và nhóm nhỏ làm việc từ xa lập kế hoạch, theo dõi tiến độ, cộng tác
 trực tuyến và không bỏ sót deadline — **tất cả trong một app**, hoạt động offline ở mức xem,
@@ -16,10 +16,12 @@ miễn phí, tiếng Việt, tự host bằng Docker.
 | Tài liệu phân tích, kiến trúc, roadmap | ✅ `docs/01` → `docs/03` |
 | Thiết kế backend v0.2 (đã rà soát & cắt giảm chức năng) | ✅ `docs/04` |
 | Kế hoạch triển khai backend (kiến trúc, API, đặc tả) | ✅ `docs/plan-backend/` |
-| Kế hoạch CI/CD phase 1 (Render + Neon) | 🛠 Đang setup — `docs/plan-deploy/01-ci-cd-phase-1.md` |
-| Backend bước 1–2: auth, user/device, dự án + RBAC + link mời, audit log | ✅ Test xanh, có CI |
-| Backend bước 3+: task, thống kê, nhắc nhở, chat | ⏭ Tiếp theo |
-| Ứng dụng Android (Kotlin/Compose) | ⏳ Khởi tạo sau |
+| Kế hoạch CI/CD phase 1 (Render + Neon) | ✅ Đã triển khai — `docs/plan-deploy/01-ci-cd-phase-1.md` |
+| Kế hoạch app mobile phase 1 (React Native/Expo) | 📝 `docs/plan-app/01-phase-1.md` |
+| Backend phase 1: auth, user/device, dự án + RBAC + link mời, audit log | ✅ Test xanh, có CI |
+| Backend phase 2: task, lịch cá nhân, thống kê, thông báo/FCM, chat WS, file | ✅ **74 test + 103 request Bruno xanh** — `docs/plan-backend/04-tong-ket-trien-khai-backend.md` |
+| Dịch vụ ngoài (Supabase Storage, Firebase FCM) | 🛠 Hướng dẫn setup — `docs/plan-deploy/02-dich-vu-ngoai.md` |
+| Ứng dụng mobile (React Native/Expo) — phase 1 | 🚧 Theo plan `docs/plan-app/01-phase-1.md` |
 
 **Phạm vi rút gọn theo góp ý người hướng dẫn:** tập trung chức năng "nên có của một ứng dụng
 di động", cắt các chức năng "đậm chất desktop" (video call, import/export, timeline chi tiết,
@@ -32,11 +34,12 @@ workspace tổ chức...). Xem chi tiết: `docs/04-thiet-ke-backend.md` mục 1
 ```
 MobileAppProject/
  ├─ backend/            # Spring Boot — modular monolith (Maven)
+ ├─ bruno/              # Bruno workspace — 103 request, phủ 65 route (OpenCollection YAML)
  ├─ docs/               # Tài liệu dự án (xem mục lục bên dưới)
  ├─ .github/workflows/  # CI: build + test backend
  ├─ .agents/skills/     # Kỹ năng hỗ trợ thiết kế mobile app
  ├─ infra/              # docker-compose dev (PostgreSQL, mailpit)
- ├─ android/            # (sau) App Kotlin — Gradle project
+ ├─ mobile/             # App React Native (Expo + TypeScript) — Android APK
  └─ .vscode/            # Cấu hình VSCode (JDK 21, extensions)
 ```
 
@@ -64,13 +67,22 @@ cd backend
 ```bash
 cd backend
 ./mvnw clean verify     # build + toàn bộ test (unit + integration)
-./mvnw test             # chỉ chạy test
+./mvnw test             # chỉ chạy test (74 test, gồm 2 integration Testcontainers)
 ```
 
 - Integration test dùng **Testcontainers** (PostgreSQL thật) — tự bỏ qua nếu máy không bật Docker
   daemon, CI trên GitHub Actions vẫn chạy đủ.
 - Đổi mật khẩu cấu hình qua biến môi trường: `DB_URL`, `DB_USERNAME`, `DB_PASSWORD`, `JWT_SECRET`,
-  `MAIL_HOST`, `MAIL_PORT`... — không commit secret.
+  `MAIL_HOST`, `MAIL_PORT`, `STORAGE_*`, `FCM_*`... — không commit secret.
+- Test API đầy đủ bằng Bruno (65 route):
+
+  ```bash
+  cd bruno
+  ./run.sh --bail          # full flow trên backend local :8080
+  ./run.sh --tags tasks    # chỉ một nhóm
+  ```
+
+  Coverage matrix route → request: `bruno/README.md`.
 
 ## Gửi email: mailpit (dev) vs SMTP thật
 
@@ -104,7 +116,12 @@ MAIL_SMTP_AUTH=true MAIL_SMTP_STARTTLS=true MAIL_FROM=you@gmail.com \
 | [`docs/plan-backend/01-kien-truc-va-stack.md`](docs/plan-backend/01-kien-truc-va-stack.md) | Kiến trúc dự án + stack (Maven), cấu trúc package, dependency rules |
 | [`docs/plan-backend/02-danh-sach-api.md`](docs/plan-backend/02-danh-sach-api.md) | Danh sách API REST + WebSocket, mã lỗi |
 | [`docs/plan-backend/03-chuc-nang-dac-ta-va-implementation.md`](docs/plan-backend/03-chuc-nang-dac-ta-va-implementation.md) | Đặc tả + cách implementation từng chức năng |
+| [`docs/plan-backend/04-tong-ket-trien-khai-backend.md`](docs/plan-backend/04-tong-ket-trien-khai-backend.md) | **Bàn giao backend**: chức năng, bản đồ file, 65 endpoint, test, env |
+| [`docs/plan-backend/05-schema-co-so-du-lieu.md`](docs/plan-backend/05-schema-co-so-du-lieu.md) | **Schema DB**: ERD 19 bảng + catalog cột/index/FK + query mẫu |
 | [`docs/plan-deploy/01-ci-cd-phase-1.md`](docs/plan-deploy/01-ci-cd-phase-1.md) | Plan CI/CD phase 1: Render (Docker) + Neon (PostgreSQL), deploy hook từ GitHub Actions |
+| [`docs/plan-deploy/02-dich-vu-ngoai.md`](docs/plan-deploy/02-dich-vu-ngoai.md) | Setup Supabase Storage + Firebase FCM (và phương án Cloudinary/Firebase Storage/MinIO) |
+| [`docs/plan-deploy/03-deploy-phase-2.md`](docs/plan-deploy/03-deploy-phase-2.md) | **Runbook deploy phase 2**: env mới, thứ tự Supabase → push → verify → rollback |
+| [`docs/plan-app/01-phase-1.md`](docs/plan-app/01-phase-1.md) | Plan app mobile phase 1 — React Native (Expo + TypeScript), design system & khai báo màn hình chi tiết |
 | [`docs/baocao-25-09-2026/`](docs/baocao-25-09-2026/) | Tài liệu báo cáo BTL 25/09/2026 (mô tả, công nghệ, khảo sát) |
 
 > `docs/04` + `docs/plan-backend/` là nguồn **hiện hành** cho backend; `docs/01–03` là bản gốc,
@@ -121,27 +138,54 @@ MAIL_SMTP_AUTH=true MAIL_SMTP_STARTTLS=true MAIL_FROM=you@gmail.com \
 - **Env vars trên Render:** `DB_URL`, `DB_USERNAME`, `DB_PASSWORD`, `JWT_SECRET` (secret),
   `DB_POOL_SIZE=5`, `JAVA_TOOL_OPTIONS=-XX:MaxRAMPercentage=70 -Duser.timezone=UTC`.
   Tuỳ chọn SMTP thật: `MAIL_*`, `MAIL_SMTP_AUTH`, `MAIL_SMTP_STARTTLS`, `MAIL_FROM`.
+  Object storage: `STORAGE_TYPE=supabase`, `STORAGE_BASE_URL`, `STORAGE_SERVICE_KEY` (secret),
+  `STORAGE_BUCKET`, `STORAGE_PUBLIC_URL`. Push: `FCM_ENABLED`, `FCM_CREDENTIALS_BASE64` (secret).
+  Hướng dẫn: `docs/plan-deploy/02-dich-vu-ngoai.md`.
 - **Free tier:** service ngủ sau ~15 phút (request đầu 30–60 s), Neon autosuspend; Render free
-  **không có persistent disk** → file upload (phase task/file) sẽ dùng object storage.
+  **không có persistent disk** → dùng Supabase Storage (hoặc đĩa local chỉ khi dev).
 - **Smoke test sau deploy:**
 
   ```bash
-  cd api-tests/collections/00-smoke
+  cd bruno/collections/00-smoke
   npx -y @usebruno/cli run --env-file ../../environments/render.yml
   ```
 
 - **Rollback:** Render → Deploys → chọn bản cũ → **Redeploy** (hoặc revert commit).
 - Chi tiết từng bước: `docs/plan-deploy/01-ci-cd-phase-1.md`.
 
+## Chạy app mobile (Expo + React Native)
+
+```bash
+cd mobile
+npm ci
+cp .env.example .env          # EXPO_PUBLIC_API_URL (mặc định backend Render)
+npx expo start                # quét QR bằng Expo Go hoặc mở emulator
+npx tsc --noEmit && npm test  # typecheck + unit/component tests
+```
+
+- Build APK: `npx expo run:android` (cần Android Studio/SDK) hoặc EAS Build
+  (`npx eas build -p android --profile preview`, cần tài khoản expo.dev).
+- Render free ngủ sau ~15 phút: lần mở app đầu có thể chờ 30–60 s — app hiện banner
+  "Máy chủ đang khởi động" + nút thử lại.
+- Cấu trúc: routes trong `mobile/src/app` (Expo Router), code dùng chung trong `mobile/src`
+  (`api/`, `components/`, `features/`, `schemas/`, `store/`, `theme/`, `utils/`).
+
 ---
 
 ## Tech stack
 
 **Backend (đã triển khai):** Java 21 · Spring Boot 3.3 · **Maven** · Spring Security + JWT (jjwt) ·
-Spring Data JPA/Hibernate · Flyway · PostgreSQL 16 · Spring Mail · springdoc-openapi · JUnit5 + Mockito + Testcontainers.
+Spring Data JPA/Hibernate · Flyway · PostgreSQL 16 · Spring Mail · Spring WebSocket (STOMP) ·
+firebase-admin (FCM) · Supabase Storage (REST, fallback đĩa local) · springdoc-openapi ·
+JUnit5 + Mockito + Testcontainers.
 
-**Mobile (dự kiến):** Kotlin · Jetpack Compose (Material 3) · MVVM + Clean Architecture · Hilt ·
-Room (cache offline) · Retrofit · WebSocket (STOMP) · FCM · WorkManager.
+**Mobile (phase 1):** React Native **Expo (managed)** · **TypeScript** · Expo Router · React Native Paper (M3) ·
+TanStack Query · axios · zod + react-hook-form · expo-secure-store · Reanimated · Jest + RNTL.
+Phase sau: nối API backend, FCM token, cache offline, chat realtime.
+
+> **Ghi chú quyết định:** nhóm chuyển UI từ Kotlin/Java native sang **React Native** (vẫn build ra APK
+> Android) vì quen React, cần UI/animation phong phú (Render free khởi động chậm) và không dùng Kotlin.
+> Lý do chi tiết + kế hoạch: `docs/plan-app/01-phase-1.md`.
 
 **Kiến trúc backend:** modular monolith — một ứng dụng, một CSDL, chia module theo feature
 (auth, user, project, task, ...). **Không** microservices, không message broker.

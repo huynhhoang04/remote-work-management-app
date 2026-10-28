@@ -75,7 +75,7 @@
 5. **Video = link phòng họp bên thứ 3 gửi trong chat** (D05): backend không có module `meeting`, không cần coturn/TURN.
 6. **E04 giữ bản tối giản** (push khi được gán task); **E05 cắt** → mốc nhắc cố định, không có bảng cấu hình nhắc.
 7. **Audit log giữ lại** (G05) — ghi hành động quan trọng, Owner xem được.
-8. **Hạ tầng đơn giản hoá:** bỏ **Redis** (không presence, không cache bắt buộc — broker WebSocket chạy in-memory cho demo; nếu scale ngang mới thêm Redis Pub/Sub), bỏ **MinIO** (file lưu đĩa local + metadata trong PostgreSQL; nếu cần object storage thật thì thay bằng MinIO/S3 sau mà không đổi API).
+8. **Hạ tầng đơn giản hoá:** bỏ **Redis** (không presence, không cache bắt buộc — broker WebSocket chạy in-memory cho demo; nếu scale ngang mới thêm Redis Pub/Sub). File dùng **object storage S3-compatible (Supabase Storage qua REST)** vì Render free không có persistent disk; `LocalStorageService` (đĩa `uploads/`) là fallback cho dev/test. Mọi thay đổi backend lưu trữ đi qua interface `StorageService` (MinIO/S3/Cloudinary sau này không đổi API).
 9. **Bỏ MapStruct:** dùng Java `record` cho DTO, mapping thủ công (đủ dùng, ít magic code). Giữ Lombok cho entity.
 10. **Email thuần túy:** Spring Mail chỉ dùng cho quên mật khẩu (không gửi lời mời — lời mời qua link).
 11. **Bỏ cơ chế đồng bộ offline (F02):** không `GET /sync?since=`, không hàng đợi đồng bộ, không xử lý xung đột. Mobile tự cache read-only (Room) để **xem** lịch & deadline khi mất mạng; thao tác ghi cần có mạng.
@@ -99,7 +99,7 @@ graph LR
 
     subgraph Data["Lưu trữ"]
         PG[(PostgreSQL 16)]
-        FS[(File upload<br/>ổ đĩa local)]
+        FS[(Object storage<br/>Supabase / local dev)]
     end
 
     FCM[Firebase FCM]
@@ -134,7 +134,7 @@ graph LR
 | ORM | Spring Data JPA / Hibernate | |
 | CSDL | PostgreSQL 16 | |
 | Migration | Flyway | `V1__init.sql`, `V2__*.sql`… |
-| File | Ổ đĩa local (`uploads/`) + bảng `files` | Interface `StorageService` để thay MinIO/S3 sau |
+| File | Object storage S3-compatible (Supabase REST) + bảng `files` | Fallback `LocalStorageService` cho dev/test; đổi MinIO/S3 chỉ cần implementation mới |
 | Push | firebase-admin SDK | |
 | Email | Spring Mail (SMTP) | Chỉ quên mật khẩu |
 | Lập lịch | Spring `@Scheduled` | Quét deadline |
@@ -170,6 +170,9 @@ Mỗi feature: `controller` → `service` → `repository` → `entity` + `dto`.
 ---
 
 ## 5. Mô hình dữ liệu
+
+> **Sơ đồ đầy đủ 19 bảng + catalog cột/index/FK:** [`plan-backend/05-schema-co-so-du-lieu.md`](plan-backend/05-schema-co-so-du-lieu.md).
+> Phần dưới đây là bản tóm tắt thiết kế ban đầu.
 
 ### 5.1 ERD
 
@@ -271,7 +274,7 @@ erDiagram
 | Chat | `POST /conversations/{id}/messages` (fallback khi WS lỗi) · `PATCH /conversations/{id}/read` `{lastReadMessageId}` | Gửi tin, đánh dấu đã đọc |
 | Notify | `GET /notifications` · `GET /notifications/unread-count` · `PATCH /notifications/{id}/read` · `PATCH /notifications/read-all` | Trung tâm thông báo |
 | Audit | `GET /projects/{id}/audit-logs` (Owner) | Nhật ký hoạt động |
-| File | `GET /files/{id}` (stream) · `POST /files` (multipart) | Tải lên/xuống |
+| File | `GET /files/{id}` (stream, kiểm quyền dự án) · `POST /files` (multipart) · `DELETE /files/{id}` · `POST /users/me/avatar` | Tải lên/xuống/xoá |
 
 ---
 
@@ -283,6 +286,7 @@ erDiagram
   - `/topic/conversations.{id}` — tin nhắn mới, read receipt của hội thoại.
   - `/user/queue/notifications` — thông báo cá nhân (khi app mở).
 - **Không có** typing/presence (đã cắt) → không cần Redis.
+- Kênh `GROUP` của dự án được tạo **lazy** ở lần truy cập đầu tiên (`ensureGroupConversation`) thay vì lúc tạo dự án — tránh phụ thuộc vòng `project ↔ chat`; thành viên kênh GROUP lấy realtime từ `project_members`, `conversation_members` chỉ lưu read receipt.
 - Tin nhắn **luôn lưu DB trước khi broadcast**; client nhận FCM khi app nền (chat 1-1) hoặc thấy tin khi tải lại lịch sử.
 - `clientMessageId` (UUID client sinh) để **idempotent** — chống trùng tin khi retry (NFR-R02).
 
@@ -293,11 +297,11 @@ erDiagram
 **Mốc nhắc cố định** (E05 cắt → không cấu hình): `REMIND_1D` (trước 1 ngày), `REMIND_1H` (trước 1 giờ), `OVERDUE` (quá hạn).
 
 - Scheduler `@Scheduled` (ví dụ mỗi 5 phút) quét task có deadline sắp tới / quá hạn trong bảng `tasks` + `task_assignees`.
-- **Chống gửi trùng:** ràng buộc unique `(task_id, user_id, type)` với bảng `notifications` (hoặc bảng `reminder_sends`) — mốc nào đã gửi thì không gửi lại.
+- **Chống gửi trùng:** cột `notifications.dedupe_key` UNIQUE (partial index, nullable) — key `{TYPE}:{taskId}:{userId}`, riêng `OVERDUE` thêm ngày `{yyyy-MM-dd}` để nhắc lại mỗi ngày.
 - Khi được **gán task** (E04 bản tối giản): tạo notification + push FCM cho người được gán (không có thông báo đổi deadline).
 - **@mention** trong comment/chat (D08): tạo notification cho người được nhắc.
-- Push FCM chỉ gửi khi thiết bị có `devices.fcm_token`; không kiểm tra presence (đã cắt) — trung tâm thông báo luôn là nguồn sự thật, push chỉ là kênh đẩy.
-- E06: task quá hạn chưa DONE → notification 1 lần/ngày cho tới khi cập nhật (hoặc 1 lần duy nhất — chốt khi triển khai).
+- Push FCM chỉ gửi khi thiết bị có `devices.fcm_token`; không kiểm tra presence (đã cắt) — trung tâm thông báo luôn là nguồn sự thật, push chỉ là kênh đẩy. Khi `FCM_ENABLED=false` hoặc thiếu credentials, push chuyển no-op (chỉ log).
+- E06: task quá hạn chưa DONE → notification **1 lần/ngày** (chốt) cho tới khi cập nhật.
 
 ---
 
@@ -361,21 +365,24 @@ services:
 ```
 
 - Môi trường: `local`, `production` (Spring profile, `.env` không commit secret).
-- **Triển khai/deploy:** chưa tính ở giai đoạn này — nhóm sẽ có kế hoạch deploy riêng cho kiểu ứng dụng mobile này.
-- Chưa dùng Redis/MinIO trong giai đoạn này (xem mục 1.3).
+- **Triển khai/deploy:** đã triển khai phase 1 (Render + Neon) — xem `docs/plan-deploy/01-ci-cd-phase-1.md`.
+- Dịch vụ ngoài: **Supabase Storage** (file) + **Firebase FCM** (push) đều tuỳ chọn, có fallback local/no-op — xem `docs/plan-deploy/02-dich-vu-ngoai.md`.
+- Chưa dùng Redis (broker in-memory cho demo).
 
 ---
 
 ## 14. Lộ trình backend (gắn với roadmap)
 
-| Giai đoạn | Nội dung backend | Gắn với |
-|---|---|---|
-| P1 | Auth + user + JWT + Flyway `V1__init.sql` | Phase 1 |
-| P2 | Project, thành viên, link mời, RBAC | Phase 2 |
-| P3 | Task (CRUD, gán, nhãn, checklist, comment, file), `start_date` cho timeline | Phase 3 |
-| P4 | `GET /me/today`, dashboard & thống kê | Phase 4 |
-| P5 | Notification + scheduler nhắc deadline + FCM + audit log | Phase 5 |
-| P6 | Chat (WS + read receipt) | Phase 6 |
+| Giai đoạn | Nội dung backend | Gắn với | Trạng thái |
+|---|---|---|---|
+| P1 | Auth + user + JWT + Flyway `V1__init.sql` | Phase 1 | ✅ |
+| P2 | Project, thành viên, link mời, RBAC | Phase 2 | ✅ |
+| P3 | Task (CRUD, gán, nhãn, checklist, comment, file), `start_date` cho timeline | Phase 3 | ✅ |
+| P4 | `GET /me/today`, dashboard & thống kê | Phase 4 | ✅ |
+| P5 | Notification + scheduler nhắc deadline + FCM + audit log | Phase 5 | ✅ |
+| P6 | Chat (WS + read receipt) | Phase 6 | ✅ |
+
+Bàn giao chi tiết (file map, 65 route, test): `docs/plan-backend/04-tong-ket-trien-khai-backend.md`.
 
 **Tiêu chí MVP backend đạt:** đăng ký → đăng nhập → tạo dự án → mời qua link → tạo & gán task → người được gán nhận push → cập nhật trạng thái → thấy thống kê trên dashboard → chat trong dự án.
 
@@ -383,4 +390,4 @@ services:
 
 ## 15. Ngoài phạm vi (để sau)
 
-Google Sign-In · họp video (Jitsi/Zoom SDK hoặc link phòng bên thứ 3 — hiện tại dùng link gửi trong chat) · tích hợp Google Calendar · import/export · 2FA · quản lý phiên thiết bị · Redis Pub/Sub + MinIO (khi cần scale / object storage) · cơ chế đồng bộ offline 2 chiều (chỉ làm nếu thực sự phát sinh nhu cầu) · Web admin portal · kế hoạch deploy (nhóm tự tính toán riêng).
+Google Sign-In · họp video (Jitsi/Zoom SDK hoặc link phòng bên thứ 3 — hiện tại dùng link gửi trong chat) · tích hợp Google Calendar · import/export · 2FA · quản lý phiên thiết bị · Redis Pub/Sub (khi cần scale ngang) · cơ chế đồng bộ offline 2 chiều (chỉ làm nếu thực sự phát sinh nhu cầu) · Web admin portal.

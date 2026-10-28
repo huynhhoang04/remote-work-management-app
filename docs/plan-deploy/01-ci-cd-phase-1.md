@@ -18,7 +18,7 @@
 **Không nằm trong phase này**
 - Build/CI cho Android app (phase sau, làm khi có project Kotlin).
 - Domain riêng, CDN, monitoring nâng cao, multi-environment (staging).
-- Upload file (Render free **không có persistent disk** — phase task/file sẽ dùng object storage free khác; xem §11).
+- Upload file (Render free **không có persistent disk** — đã chọn Supabase Storage; xem `docs/plan-deploy/02-dich-vu-ngoai.md`).
 
 ---
 
@@ -58,7 +58,7 @@ graph LR
 |---|---|---|
 | Render Web Service | 512 MB RAM, 750 giờ/tháng, spin-down ~15 phút idle, cold start ~30–60 s | Request đầu tiên sau idle rất chậm → app cần timeout ≥ 60 s + retry |
 | Neon | 0.5 GB storage, ~191 compute-hours/tháng, autosuspend ~5 phút | Query đầu tiên sau idle chậm ~0.5 s |
-| Render disk | **Không có** persistent disk ở free | Không lưu file upload trên đĩa — phase file sẽ dùng object storage (Cloudinary/Supabase/S3 free) |
+| Render disk | **Không có** persistent disk ở free | Không lưu file upload trên đĩa — dùng Supabase Storage (`docs/plan-deploy/02-dich-vu-ngoai.md`) |
 
 ---
 
@@ -71,8 +71,8 @@ graph LR
 | `backend/Dockerfile` | Multi-stage: `maven:3.9-eclipse-temurin-21` build (`./mvnw -B -DskipTests package`) → `eclipse-temurin:21-jre` chạy `java -jar app.jar` |
 | `backend/.dockerignore` | `target/`, `uploads/`, `.mvn/wrapper` (nếu cần), `.git`, `*.md` |
 | `render.yaml` | Blueprint: 1 web service `remoteapp-backend`, `runtime: docker`, `plan: free`, `dockerfilePath: backend/Dockerfile`, `dockerContext: backend`, `healthCheckPath: /actuator/health`, `autoDeploy: false`, `envVars` (danh sách ở §6.2) |
-| `api-tests/environments/render.yml` | `baseUrl = https://<service>.onrender.com` + biến như `local.yml`; dùng cho smoke test sau deploy |
-| `api-tests/collections/00-smoke/` | 2 request read-only: `GET /actuator/health` (200) và `GET /api/v1/users/me` (401 `AUTH_UNAUTHORIZED`) — chạy được trên DB thật mà không ghi dữ liệu |
+| `bruno/environments/render.yml` | `baseUrl = https://<service>.onrender.com` + biến như `local.yml`; dùng cho smoke test sau deploy |
+| `bruno/collections/00-smoke/` | 2 request read-only: `GET /actuator/health` (200) và `GET /api/v1/users/me` (401 `AUTH_UNAUTHORIZED`) — chạy được trên DB thật mà không ghi dữ liệu |
 
 ### 4.2 File sửa
 
@@ -177,7 +177,7 @@ sequenceDiagram
 2. `GET /api/v1/users/me` không token → **401** `AUTH_UNAUTHORIZED`.
 3. Chạy Bruno read-only:
    ```bash
-   cd api-tests/collections/00-smoke
+   cd bruno/collections/00-smoke
    npx -y @usebruno/cli run --env-file ../../environments/render.yml
    ```
 4. (Tuỳ chọn, chỉ khi muốn test full flow trên DB thật) đăng ký 2 tài khoản demo và chạy thử login →
@@ -217,7 +217,7 @@ sequenceDiagram
 | Cold start 30–60 s làm app timeout | Cao (UX) | Android timeout ≥ 60 s + retry; tuỳ chọn UptimeRobot giữ ấm |
 | Neon autosuspend + connection limit | Vừa | Pool 5; dùng host direct; nếu lỗi → pooler + `prepareThreshold=0` |
 | Email thật chưa cấu hình ở prod | Thấp | Phase 1 chấp nhận (forgot vẫn 204); cấu hình SMTP khi demo cần |
-| File upload không lưu được trên Render free | Cao (phase sau) | Phase task/file dùng object storage free (Cloudinary/Supabase/S3) — quyết định ở plan sau |
+| File upload không lưu được trên Render free | Cao (phase sau) | Đã chọn Supabase Storage + fallback local — xem `docs/plan-deploy/02-dich-vu-ngoai.md` |
 | Deploy lỗi do thiếu env | Vừa | `render.yaml` liệt kê đủ biến; smoke test ngay sau deploy |
 | Hết quota Render/Neon khi demo | Thấp | Chỉ 1 service + 1 DB; tắt service không dùng |
 
@@ -246,7 +246,7 @@ sequenceDiagram
 4. Tạo Neon project → lấy connection string.
 5. Tạo Render Blueprint/service → nhập env vars → deploy lần đầu.
 6. Thêm `RENDER_DEPLOY_HOOK_URL` vào GitHub secrets; push `main` để chạy thử toàn luồng.
-7. Thêm `api-tests/environments/render.yml` + collection `00-smoke`; chạy smoke.
+7. Thêm `bruno/environments/render.yml` + collection `00-smoke`; chạy smoke.
 8. Cập nhật README (mục Deploy) và commit.
 
 > Ghi chú: các bước 4–6 cần bạn thao tác trên dashboard Neon/Render (tôi không có quyền truy cập tài

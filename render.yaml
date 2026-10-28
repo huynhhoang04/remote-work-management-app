@@ -27,3 +27,22 @@ services:
         value: "5"
       - key: JAVA_TOOL_OPTIONS
         value: "-XX:MaxRAMPercentage=70 -Duser.timezone=UTC"
+      # Object storage — xem docs/plan-deploy/02-dich-vu-ngoai.md
+      # Để trống = local (file mất khi redeploy). Điền "supabase" sau khi có đủ key.
+      - key: STORAGE_TYPE
+        sync: false
+      - key: STORAGE_BASE_URL
+        sync: false
+      - key: STORAGE_SERVICE_KEY
+        sync: false
+      - key: STORAGE_BUCKET
+        value: "remoteapp-uploads"
+      - key: STORAGE_PUBLIC_URL
+        sync: false
+      # Push notification (tuỳ chọn; false -> no-op)
+      - key: FCM_ENABLED
+        value: "false"
+      - key: FCM_CREDENTIALS_BASE64
+        sync: false
+      - key: APP_TIMEZONE
+        value: "Asia/Ho_Chi_Minh"

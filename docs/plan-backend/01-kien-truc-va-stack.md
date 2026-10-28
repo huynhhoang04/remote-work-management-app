@@ -80,24 +80,26 @@ backend/
  │   ├─ user/            # UserController, UserService, User, Device, dto/
  │   ├─ project/         # ProjectController, ProjectService, ProjectPermissionService,
  │   │                   # InviteService, Project, ProjectMember, ProjectInvite, dto/
- │   ├─ task/            # TaskController, TaskService, TaskCommentService, AttachmentService,
+ │   ├─ task/            # TaskController, TaskService, TaskCommentService,
  │   │                   # Task, TaskAssignee, Label, TaskLabel, TaskComment, dto/
  │   ├─ schedule/        # ScheduleController, ScheduleService, ScheduleEvent, dto/
- │   ├─ stats/           # StatsController, StatsService, dto/
+ │   ├─ stats/           # StatsController, StatsService, StatsRepository (JdbcTemplate), dto/
  │   ├─ chat/            # ChatController, ChatService, ChatWsController, Conversation,
- │   │                   # ConversationMember, Message, dto/
+ │   │                   # ConversationMember, Message, ws/, dto/
  │   ├─ notification/    # NotificationController, NotificationService, ReminderScheduler,
- │   │                   # FcmService, Notification, dto/
- │   ├─ audit/           # AuditService, AuditLogController, AuditLog, dto/
- │   └─ file/            # FileController, StorageService, LocalStorageService, FileMeta, dto/
+ │   │                   # PushSender/FcmPushSender/NoopPushSender, Notification, dto/
+ │   ├─ audit/           # AuditService, AuditLog, dto/ (đọc qua ProjectController)
+ │   └─ file/            # FileController, StorageService, LocalStorageService,
+ │                       # SupabaseStorageService, FileMeta, dto/
  ├─ src/main/resources/
- │   ├─ application.yml · application-local.yml · application-prod.yml
+ │   ├─ application.yml
  │   └─ db/migration/
  │       ├─ V1__users_auth.sql
  │       ├─ V2__projects.sql
  │       ├─ V3__tasks.sql
- │       ├─ V4__chat.sql
- │       └─ V5__notification_audit_files.sql
+ │       ├─ V4__schedule.sql
+ │       ├─ V5__chat.sql
+ │       └─ V6__notifications_files.sql
  └─ src/test/java/...    # unit test service + integration test repository/controller
 ```
 
@@ -125,17 +127,20 @@ controller  →  service  →  repository (Spring Data JPA)  →  entity
 | Module | Được phép gọi (qua public service) |
 |---|---|
 | auth | user (tạo user, đổi mật khẩu), audit (USER_PASSWORD_CHANGED) |
-| user | — |
-| project | user, chat (tạo kênh chat mặc định khi tạo dự án), audit (PROJECT_*, MEMBER_*, INVITE_*) |
-| task | project (ProjectPermissionService), user, file, notification, audit |
-| schedule | user |
-| stats | chỉ **đọc** repository của task/project (query tổng hợp riêng trong StatsService) |
-| chat | project (check membership), user, file, notification, audit |
-| notification | user (lấy device token) |
+| user | file (upload avatar) |
+| project | user (ghép tên thành viên), audit (PROJECT_*, MEMBER_*, INVITE_*) |
+| task | project (ProjectPermissionService/ProjectService), user, file, notification, audit |
+| schedule | user, task (validate `taskId` liên kết) |
+| stats | chỉ **đọc** bảng của task/project/schedule bằng query tổng hợp riêng (StatsRepository) |
+| chat | project, user, file, notification, audit |
+| notification | user (lấy device token); **đọc** bảng task/task_assignees bằng query tổng hợp riêng cho reminder |
 | audit | — |
-| file | user |
+| file | project (ProjectPermissionService) |
 
-- **Không** truy cập repository của module khác (trừ stats — query đọc tổng hợp).
+- **Không** truy cập repository của module khác. Ngoại lệ duy nhất là **query đọc tổng hợp**:
+  `stats` (dashboard/thống kê) và `notification` (scheduler nhắc deadline) — không sửa dữ liệu module khác.
+- **Group chat lazy:** `project` **không** gọi `chat` khi tạo dự án; `ChatService.ensureGroupConversation`
+  tạo kênh GROUP ở lần truy cập đầu (tránh circular bean dependency).
 - **Không** dependency vòng tròn: mọi kiểm tra quyền đi qua `ProjectPermissionService` (module `project`).
 - `notification` được gọi từ `task`/`chat` qua interface `NotificationService` — không gọi ngược.
 
@@ -188,8 +193,8 @@ Client SEND /app/chat.send → ChatWsController → ChatService (lưu DB)
 | CSDL | PostgreSQL 16 | |
 | Migration | Flyway | |
 | Email | Spring Mail | Chỉ quên mật khẩu |
-| Push | firebase-admin | |
-| File | Ổ đĩa local (`uploads/`) | Interface `StorageService` để thay S3/MinIO sau |
+| Push | firebase-admin | No-op khi `FCM_ENABLED=false` |
+| File | Object storage S3-compatible (Supabase REST) | `LocalStorageService` fallback dev/test; đổi MinIO/S3 chỉ cần implementation mới |
 | API docs | springdoc-openapi | Swagger UI |
 | Validation | Jakarta Bean Validation | |
 | Tiện ích | Lombok (cho entity) | DTO dùng `record` |
@@ -234,9 +239,9 @@ Client SEND /app/chat.send → ChatWsController → ChatService (lưu DB)
 ## 7. Cấu hình & môi trường
 
 - `application.yml`: cấu hình chung; `application-local.yml` / `application-prod.yml`: profile riêng.
-- **Biến môi trường (không commit secret):** `DB_URL`, `DB_USERNAME`, `DB_PASSWORD`, `JWT_SECRET`, `MAIL_HOST/PORT/USERNAME/PASSWORD`, `FCM_CREDENTIALS_PATH`, `UPLOAD_DIR`.
-- Dev local bằng Docker Compose: `postgres:16` + `mailpit` (SMTP giả, bắt email reset mật khẩu). Backend chạy trực tiếp từ IDE.
-- **Deploy:** chưa tính giai đoạn này — nhóm có kế hoạch riêng cho kiểu app mobile.
+- **Biến môi trường (không commit secret):** `DB_URL`, `DB_USERNAME`, `DB_PASSWORD`, `JWT_SECRET`, `MAIL_HOST/PORT/USERNAME/PASSWORD`, `MAIL_FROM`, `STORAGE_TYPE`, `STORAGE_BASE_URL`, `STORAGE_SERVICE_KEY`, `STORAGE_BUCKET`, `STORAGE_PUBLIC_URL`, `UPLOAD_DIR`, `FCM_ENABLED`, `FCM_CREDENTIALS_BASE64`, `APP_TIMEZONE`, `REMINDER_INTERVAL_MS`, `REMINDER_INITIAL_DELAY_MS`.
+- Dev local bằng Docker Compose: `postgres:16` + `mailpit` (SMTP giả, bắt email reset mật khẩu). Backend chạy trực tiếp từ IDE; file dùng đĩa local, push no-op.
+- **Deploy:** phase 1 đã triển khai Render (Docker) + Neon — xem `docs/plan-deploy/01-ci-cd-phase-1.md`; dịch vụ ngoài Supabase/FCM ở `docs/plan-deploy/02-dich-vu-ngoai.md`.
 
 ---
 
