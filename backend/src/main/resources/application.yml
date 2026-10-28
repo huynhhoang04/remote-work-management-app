@@ -48,8 +48,25 @@ app:
     reset-token-minutes: 30
     login-max-attempts: 10
     login-window-seconds: 60
+  timezone: ${APP_TIMEZONE:Asia/Ho_Chi_Minh}
   upload:
     dir: ${UPLOAD_DIR:uploads}
+  storage:
+    # local = đĩa (dev/test); supabase = object storage (prod, xem docs/plan-deploy/02)
+    type: ${STORAGE_TYPE:local}
+    bucket: ${STORAGE_BUCKET:remoteapp-uploads}
+    base-url: ${STORAGE_BASE_URL:}
+    service-key: ${STORAGE_SERVICE_KEY:}
+    public-url: ${STORAGE_PUBLIC_URL:}
+  fcm:
+    # false -> NoopPushSender (notification vẫn lưu DB, chỉ không gửi push)
+    enabled: ${FCM_ENABLED:false}
+    credentials-base64: ${FCM_CREDENTIALS_BASE64:}
+  reminder:
+    # chu kỳ quét nhắc deadline; lưới an toàn là dedupe_key UNIQUE
+    interval-ms: ${REMINDER_INTERVAL_MS:300000}
+    # hoãn lần quét đầu (tránh chạy ngay khi app/test vừa khởi động)
+    initial-delay-ms: ${REMINDER_INITIAL_DELAY_MS:60000}
   mail:
     # Địa chỉ gửi (From) của email hệ thống. SMTP thật: dùng sender đã xác thực (SPF/DKIM).
     from: ${MAIL_FROM:no-reply@remoteapp.local}

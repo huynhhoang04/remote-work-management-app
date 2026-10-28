@@ -1,7 +1,9 @@
 package com.example.remoteapp.common;
 
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.validation.FieldError;
@@ -11,6 +13,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
 /**
  * Chuyển mọi exception thành response lỗi thống nhất (plan 02 §1.1).
@@ -127,6 +130,57 @@ public class GlobalExceptionHandler {
                                                             HttpServletRequest request) {
         ErrorResponse body = ErrorResponse.of(ErrorCode.PROJECT_FORBIDDEN, "Bạn không có quyền thực hiện thao tác này",
                 request.getRequestURI());
+        return ResponseEntity.status(body.status()).body(body);
+    }
+
+    /**
+     * Xử lý xung đột phiên bản khi cập nhật task (optimistic locking).
+     *
+     * @param ex      exception khoá lạc hậu
+     * @param request request hiện tại
+     * @return response lỗi 409 TASK_VERSION_CONFLICT
+     * @reference docs/plan-backend/03-chuc-nang-dac-ta-va-implementation.md §C1
+     */
+    @ExceptionHandler(OptimisticLockingFailureException.class)
+    public ResponseEntity<ErrorResponse> handleOptimisticLock(OptimisticLockingFailureException ex,
+                                                              HttpServletRequest request) {
+        ErrorResponse body = ErrorResponse.of(ErrorCode.TASK_VERSION_CONFLICT,
+                "Dữ liệu đã bị người khác cập nhật, vui lòng tải lại", request.getRequestURI());
+        return ResponseEntity.status(body.status()).body(body);
+    }
+
+    /**
+     * Xử lý file upload vượt quá giới hạn multipart của Spring.
+     *
+     * @param ex      exception kích thước file
+     * @param request request hiện tại
+     * @return response lỗi FILE_TOO_LARGE
+     * @reference docs/plan-backend/03-chuc-nang-dac-ta-va-implementation.md §H
+     */
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<ErrorResponse> handleMaxUpload(MaxUploadSizeExceededException ex,
+                                                         HttpServletRequest request) {
+        ErrorResponse body = ErrorResponse.of(ErrorCode.FILE_TOO_LARGE,
+                "File vượt quá giới hạn 10MB", request.getRequestURI());
+        return ResponseEntity.status(body.status()).body(body);
+    }
+
+    /**
+     * Xử lý lỗi validate tham số request (query/path) và tham số method.
+     *
+     * @param ex      exception constraint
+     * @param request request hiện tại
+     * @return response lỗi VALIDATION_ERROR
+     * @reference docs/plan-backend/02-danh-sach-api.md §1.1
+     */
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ResponseEntity<ErrorResponse> handleConstraintViolation(ConstraintViolationException ex,
+                                                                   HttpServletRequest request) {
+        String message = ex.getConstraintViolations().stream()
+                .map(violation -> violation.getPropertyPath() + ": " + violation.getMessage())
+                .findFirst()
+                .orElse("Dữ liệu không hợp lệ");
+        ErrorResponse body = ErrorResponse.of(ErrorCode.VALIDATION_ERROR, message, request.getRequestURI());
         return ResponseEntity.status(body.status()).body(body);
     }
 

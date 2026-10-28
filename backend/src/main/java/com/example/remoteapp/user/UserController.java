@@ -5,12 +5,16 @@ import com.example.remoteapp.user.dto.UpdateProfileRequest;
 import com.example.remoteapp.user.dto.UserResponse;
 import jakarta.validation.Valid;
 import java.util.UUID;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 /**
  * REST controller cho hồ sơ người dùng (plan 02 §3).
@@ -59,5 +63,17 @@ public class UserController {
     public ResponseEntity<UserResponse> updateProfile(@Valid @RequestBody UpdateProfileRequest request) {
         UUID userId = SecurityUtils.currentUserId();
         return ResponseEntity.ok(userService.updateProfile(userId, request));
+    }
+
+    /**
+     * Upload avatar (multipart, ảnh ≤ 5MB) — cập nhật luôn hồ sơ (FR-A04).
+     *
+     * @param file file ảnh
+     * @return hồ sơ sau khi cập nhật
+     * @reference docs/plan-backend/02-danh-sach-api.md §3
+     */
+    @PostMapping(value = "/users/me/avatar", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<UserResponse> uploadAvatar(@RequestPart("file") MultipartFile file) {
+        return ResponseEntity.ok(userService.updateAvatar(SecurityUtils.currentUserId(), file));
     }
 }
