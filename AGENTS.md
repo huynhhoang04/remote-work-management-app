@@ -139,7 +139,7 @@ matching doc **in the same commit**.
 - Before you are done: `cd backend && ./mvnw test` must be **green**. API changes require
   updated/new tests.
 - Mobile: `cd mobile && npx tsc --noEmit && npm test` must be **green** (Jest + RNTL; zod schemas,
-  error mapping, refresh interceptor, key components).
+  error mapping, refresh interceptor, key components, UTF-8 polyfill, chat cache).
 
 ## 8. Main commands
 
@@ -176,8 +176,9 @@ Troubleshooting: if the app fails with `java.lang.Error: Unresolved compilation 
 
 1. **Read before writing.** Read the docs from section 4 and the files you are about to change.
 2. **Follow the plan.** Backend phases 1–6 are implemented (handover in
-   `docs/plan-backend/04-tong-ket-trien-khai-backend.md`); next is the mobile app
-   (`docs/plan-app/01-phase-1.md`). Requests that contradict the plan → ask or state the reason.
+   `docs/plan-backend/04-tong-ket-trien-khai-backend.md`); mobile phase 1–2 are implemented
+   (`docs/plan-app/01-phase-1.md`, `docs/plan-app/02-phase-2.md`); next is phase 3 (fixes/QA).
+   Requests that contradict the plan → ask or state the reason.
 3. **Keep scope tight.** Only do what was asked — no speculative abstractions, no out-of-scope
    refactors, no new infrastructure/config without a need.
 4. **Validate before declaring done.** Build + tests must pass; fix what you broke.

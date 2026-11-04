@@ -21,7 +21,8 @@ miễn phí, tiếng Việt, tự host bằng Docker.
 | Backend phase 1: auth, user/device, dự án + RBAC + link mời, audit log | ✅ Test xanh, có CI |
 | Backend phase 2: task, lịch cá nhân, thống kê, thông báo/FCM, chat WS, file | ✅ **74 test + 103 request Bruno xanh** — `docs/plan-backend/04-tong-ket-trien-khai-backend.md` |
 | Dịch vụ ngoài (Supabase Storage, Firebase FCM) | 🛠 Hướng dẫn setup — `docs/plan-deploy/02-dich-vu-ngoai.md` |
-| Ứng dụng mobile (React Native/Expo) — phase 1 | 🚧 Theo plan `docs/plan-app/01-phase-1.md` |
+| Ứng dụng mobile (React Native/Expo) — phase 1 | ✅ Đăng nhập, dự án, thành viên, link mời, hồ sơ |
+| Ứng dụng mobile (React Native/Expo) — phase 2 | ✅ Task/Kanban, lịch, thống kê, thông báo, chat realtime, file — 43 test, typecheck xanh |
 
 **Phạm vi rút gọn theo góp ý người hướng dẫn:** tập trung chức năng "nên có của một ứng dụng
 di động", cắt các chức năng "đậm chất desktop" (video call, import/export, timeline chi tiết,
@@ -122,6 +123,7 @@ MAIL_SMTP_AUTH=true MAIL_SMTP_STARTTLS=true MAIL_FROM=you@gmail.com \
 | [`docs/plan-deploy/02-dich-vu-ngoai.md`](docs/plan-deploy/02-dich-vu-ngoai.md) | Setup Supabase Storage + Firebase FCM (và phương án Cloudinary/Firebase Storage/MinIO) |
 | [`docs/plan-deploy/03-deploy-phase-2.md`](docs/plan-deploy/03-deploy-phase-2.md) | **Runbook deploy phase 2**: env mới, thứ tự Supabase → push → verify → rollback |
 | [`docs/plan-app/01-phase-1.md`](docs/plan-app/01-phase-1.md) | Plan app mobile phase 1 — React Native (Expo + TypeScript), design system & khai báo màn hình chi tiết |
+| [`docs/plan-app/02-phase-2.md`](docs/plan-app/02-phase-2.md) | Plan app mobile phase 2 — task/Kanban, lịch, thống kê, thông báo, chat STOMP, file, push |
 | [`docs/baocao-25-09-2026/`](docs/baocao-25-09-2026/) | Tài liệu báo cáo BTL 25/09/2026 (mô tả, công nghệ, khảo sát) |
 
 > `docs/04` + `docs/plan-backend/` là nguồn **hiện hành** cho backend; `docs/01–03` là bản gốc,
@@ -165,6 +167,10 @@ npx tsc --noEmit && npm test  # typecheck + unit/component tests
 
 - Build APK: `npx expo run:android` (cần Android Studio/SDK) hoặc EAS Build
   (`npx eas build -p android --profile preview`, cần tài khoản expo.dev).
+- Phase 2 thêm native modules (notifications, image/document picker, file-system, sharing,
+  datetimepicker) → cần **rebuild native**, không dùng Expo Go cho các tính năng này.
+  Push FCM cần `google-services.json` + `FCM_ENABLED=true`; thiếu cấu hình app vẫn chạy.
+- Chat realtime dùng STOMP `/ws`; mất kết nối tự fallback REST với `clientMessageId`.
 - Render free ngủ sau ~15 phút: lần mở app đầu có thể chờ 30–60 s — app hiện banner
   "Máy chủ đang khởi động" + nút thử lại.
 - Cấu trúc: routes trong `mobile/src/app` (Expo Router), code dùng chung trong `mobile/src`

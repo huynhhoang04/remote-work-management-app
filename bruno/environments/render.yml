@@ -2,4 +2,52 @@ name: render
 variables:
   - name: baseUrl
     value: https://remoteapp-backend.onrender.com
-    description: URL công khai của backend trên Render — đổi theo đúng tên service (Render → service → URL). Free tier ngủ sau ~15 phút, request đầu có thể mất 30-60s.
+    description: URL công khai của backend trên Render. Free tier ngủ sau ~15 phút; run-render.sh tự đánh thức trước khi chạy.
+  - name: inputEmailA
+    value: huynh696k@gmail.com
+    description: Email tài khoản A — BẠN nhập (run-render.sh tự sinh email riêng mỗi lần chạy). Chạy lại collection cần email mới hoặc DB sạch.
+  - name: inputEmailB
+    value: lolvn404@gmail.com
+    description: Email tài khoản B — phải KHÁC A.
+  - name: inputEmailC
+    value: ""
+    description: Email tài khoản C (ngoài mọi dự án) — dùng cho test 403/INVITE_INVALID. Phải KHÁC A và B.
+  - name: inputShortPwEmail
+    value: ""
+    description: Email riêng cho request 24 (mật khẩu < 8 ký tự) — run-render.sh tự sinh.
+  - secret: true
+    name: inputPasswordA
+    description: Mật khẩu tài khoản A (>= 8 ký tự) — BẠN nhập ở tab Secret Variables.
+  - secret: true
+    name: inputPasswordB
+    description: Mật khẩu tài khoản B (>= 8 ký tự).
+  - secret: true
+    name: inputPasswordC
+    description: Mật khẩu tài khoản C (>= 8 ký tự).
+  - secret: true
+    name: inputNewPasswordA
+    description: Mật khẩu mới cho request 11 (đổi mật khẩu, >= 8 ký tự).
+  - name: inputResetToken
+    value: ""
+    description: Token đặt lại mật khẩu lấy từ email — Render chưa cấu hình SMTP thật thì bỏ qua (collection reset chạy tay).
+  - secret: true
+    name: inputResetPassword
+    description: Mật khẩu mới đặt lại qua email.
+  - name: inputFcmToken
+    value: fcm-device-render-1
+    description: FCM token giả cho request 09/10 — run-render.sh tự thêm timestamp để tránh trùng.
+  - name: inputUploadFile
+    value: fixtures/sample.txt
+    description: File upload đính kèm (multipart). run-render.sh tự truyền đường dẫn tuyệt đối; trong Bruno app chọn file thật.
+  - name: inputAvatarFile
+    value: fixtures/sample.png
+    description: Ảnh upload avatar (multipart). run-render.sh tự truyền đường dẫn tuyệt đối.
+  - name: projectId
+    value: ""
+    description: KẾT QUẢ request 12 bắt vào runtime (không phải input).
+  - name: projectBId
+    value: ""
+    description: KẾT QUẢ request 26 bắt vào runtime.
+  - name: inviteCode
+    value: ""
+    description: KẾT QUẢ request 15 bắt vào runtime.

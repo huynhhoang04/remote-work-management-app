@@ -47,6 +47,20 @@ cd bruno && ./run.sh --bail
 `run.sh` tự sinh email riêng cho lần chạy, mật khẩu dev, và đường dẫn tuyệt đối cho
 `fixtures/sample.txt` / `fixtures/sample.png`. Không sửa file environment.
 
+### Full bộ test trên Render (DB thật)
+
+```bash
+cd bruno
+./run-render.sh --bail          # hỏi xác nhận, tự đánh thức Render rồi chạy 103 request
+./run-render.sh --bail --yes    # không hỏi (demo/CI)
+./run-render.sh --tags tasks --yes
+```
+
+- Script tự gọi `/actuator/health` trước để đánh thức Render free (cold start 30–60s),
+  tránh request đầu bị timeout 30s.
+- **CÓ GHI dữ liệu demo** vào Neon: user/project/task/chat/file với email random mỗi lần chạy.
+- Chỉ dùng cho môi trường demo; không chạy trên DB có dữ liệu thật.
+
 Chạy smoke read-only trên backend đã deploy (Render):
 
 ```bash
@@ -173,6 +187,8 @@ Tags: `smoke`, `auth`, `users`, `devices`, `projects`, `members`, `invites`, `au
   (logout B) và `103` (refresh sau logout) phải ở cuối.
 - `run.sh` chỉ dành cho **local/demo DB**. Nó không tự xoá dữ liệu; chạy lại cần email mới
   hoặc DB sạch (`DROP SCHEMA public CASCADE; CREATE SCHEMA public;` rồi chạy lại backend).
+- `run-render.sh` ghi dữ liệu demo vào **Neon production**; mỗi lần chạy dùng email mới nên
+  không đụng dữ liệu cũ, nhưng sẽ để lại user/project/task/chat/file demo.
 - Secret luôn nằm ở tab Secret Variables hoặc `*.local.yml` (đã gitignore). Không commit giá trị thật.
 - `fixtures/sample.txt` (text/plain) và `fixtures/sample.png` (1×1 PNG) là file upload mẫu —
   không chứa dữ liệu thật.

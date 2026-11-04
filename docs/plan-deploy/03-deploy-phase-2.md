@@ -166,21 +166,12 @@ select version, description, success from flyway_schema_history order by install
 
 ### 7.2 Upload file thật (Supabase)
 
-Cách nhanh nhất: chạy Bruno `01-api` trên Render (ghi dữ liệu demo) rồi xem kết quả:
+Cách nhanh nhất: chạy full bộ Bruno trên Render (ghi dữ liệu demo) — script tự đánh thức
+Render và dùng email random mỗi lần:
 
 ```bash
-cd bruno/collections/01-api
-npx -y @usebruno/cli run \
-  --env-file ../../environments/render.yml \
-  --env-var inputEmailA="demo-a-$(date +%s)@example.com" \
-  --env-var inputEmailB="demo-b-$(date +%s)@example.com" \
-  --env-var inputEmailC="demo-c-$(date +%s)@example.com" \
-  --env-var inputPasswordA=password-123 \
-  --env-var inputPasswordB=password-123 \
-  --env-var inputPasswordC=password-123 \
-  --env-var inputNewPasswordA=password-123-v2 \
-  --env-var inputUploadFile="$PWD/../../fixtures/sample.txt" \
-  --env-var inputAvatarFile="$PWD/../../fixtures/sample.png"
+cd bruno
+./run-render.sh --bail --yes
 ```
 
 Hoặc test tay: register → login → tạo project → `POST /tasks/{id}/attachments` (multipart).
