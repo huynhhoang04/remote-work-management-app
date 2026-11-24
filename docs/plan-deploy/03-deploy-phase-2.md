@@ -64,6 +64,12 @@ Vào Render → service `remoteapp-backend` → **Environment** → thêm:
 `render.yaml` đã khai báo các key này với `sync: false`; nếu Render không tự thêm vào service
 đang chạy, thêm tay như bảng trên.
 
+> **Kiểm tra ngay sau khi deploy:** server log có dòng
+> `Supabase Storage: baseUrl=https://<ref>.supabase.co, bucket=remoteapp-uploads, keyType=...`.
+> Nếu `keyType=new-api-key` (`sb_secret_...`) cũng OK — backend chỉ gửi header `apikey`.
+> Nếu upload vẫn 500, log sẽ in `HTTP <status> <body>` để biết sửa biến nào
+> (xem `02-dich-vu-ngoai.md` §7).
+
 ### 3.3 Vì sao không dùng đĩa local trên Render?
 
 Render free không có persistent disk → container restart/redeploy là mất `uploads/`.

@@ -52,6 +52,21 @@ STORAGE_BUCKET=remoteapp-uploads
 STORAGE_PUBLIC_URL=https://<project-ref>.supabase.co/storage/v1/object/public/remoteapp-uploads
 ```
 
+**Backend tự chuẩn hoá các giá trị này** (`SupabaseStorageService`), nên dán từ dashboard/CI
+hơi bẩn vẫn chạy:
+
+| Tình huống dán vào | Backend tự xử lý |
+|---|---|
+| `STORAGE_BASE_URL` có khoảng trắng/xuống dòng/dấu `"`/`'` | trim, bỏ nháy |
+| `STORAGE_BASE_URL` có dấu `/` cuối | bỏ |
+| `STORAGE_BASE_URL` dán nhầm URL Storage (`.../storage/v1`) | bỏ đuôi `storage/v1` |
+| `STORAGE_SERVICE_KEY` có xuống dòng/`Bearer ` | trim, bỏ `Bearer ` |
+| Key legacy `eyJ...` (service_role JWT) | gửi `apikey` + `Authorization: Bearer` |
+| Key mới `sb_secret_...` | **chỉ** gửi `apikey` (Supabase từ chối Bearer không phải JWT) |
+
+Log khởi động in ra `Supabase Storage: baseUrl=..., bucket=..., keyType=...` (không in key)
+để đối chiếu nhanh trên Render.
+
 ### 2.3 Kiểm tra nhanh bằng cURL
 
 ```bash
@@ -206,6 +221,10 @@ FCM_CREDENTIALS_BASE64=<nội dung file .b64>
 | Triệu chứng | Nguyên nhân thường gặp | Cách xử lý |
 |---|---|---|
 | Upload trả 500 `STORAGE_ERROR` | Sai `STORAGE_BASE_URL`/bucket/key; bucket chưa tạo | Kiểm tra lại §2.1–2.2, chạy cURL §2.3 |
+| Upload 500, log có `Gợi ý: kiểm tra STORAGE_SERVICE_KEY` | Upstream 401/403 — key `anon` thay vì `service_role`, key cũ đã rotate, hoặc key mới `sb_secret_` dán kèm ký tự lạ | Đọc dòng log `Supabase Storage: upload ... thất bại — HTTP 401 <body>` để biết body thật; lấy lại key ở Project Settings → API |
+| Upload 500, log có `Gợi ý: kiểm tra STORAGE_BASE_URL và STORAGE_BUCKET` | Upstream 404 — sai project ref hoặc bucket chưa tạo | Đối chiếu dòng log khởi động `baseUrl=... bucket=...` với Supabase |
+| Upload 500, log không có gợi ý, `describe` là `ResourceAccessException` | Không nối được Supabase (DNS/TLS/mạng), **hoặc project Supabase free đã bị pause** sau ~1 tuần không dùng | Mở dashboard Supabase → nếu thấy nút **Restore/Pause**, bấm Restore rồi upload lại; thử cURL §2.3 từ máy |
+| Log Render trước đây chỉ có một câu chung, không rõ nguyên nhân | Code cũ nuốt `RestClientException` | Đã sửa: log `HTTP <status> <body>` (≤500 ký tự) + dòng gợi ý cấu hình |
 | Upload trả 401/403 | Dùng `anon` key thay vì `service_role` | Lấy lại key đúng |
 | `GET /files/{id}` 404 dù vừa upload | Đổi cấu hình storage sau khi upload; object không còn | Upload lại; kiểm tra `files.storage_key` |
 | File mất sau redeploy | `STORAGE_TYPE=local` trên Render (không có đĩa) | Chuyển sang Supabase |
