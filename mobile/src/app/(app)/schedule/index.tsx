@@ -3,6 +3,7 @@ import { router, Stack } from 'expo-router';
 import React, { useMemo, useState } from 'react';
 import { ActivityIndicator, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { FAB, Icon, IconButton, Text, TouchableRipple, useTheme } from 'react-native-paper';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { normalizeError } from '@/api/errors';
 import { StateView } from '@/components/StateView';
 import { useScheduleEvents } from '@/features/schedule/hooks';
@@ -20,6 +21,7 @@ export default function ScheduleScreen() {
   const [month, setMonth] = useState(() => dayjs().startOf('month'));
   const [selected, setSelected] = useState(() => dayjs());
   const [refreshing, setRefreshing] = useState(false);
+  const insets = useSafeAreaInsets();
 
   const gridStart = useMemo(() => {
     const first = month.startOf('month');
@@ -197,7 +199,12 @@ export default function ScheduleScreen() {
         </ScrollView>
       )}
 
-      <FAB icon="plus" label={STR.schedule.createTitle} style={styles.fab} onPress={() => router.push('/schedule/new')} />
+      <FAB
+        icon="plus"
+        label={STR.schedule.createTitle}
+        style={[styles.fab, { bottom: spacing.xl + insets.bottom }]}
+        onPress={() => router.push('/schedule/new')}
+      />
     </View>
   );
 }

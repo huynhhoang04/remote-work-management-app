@@ -37,7 +37,10 @@ export default function ProjectListScreen() {
   }, [projects]);
 
   return (
-    <SafeAreaView style={styles.safe} edges={['left', 'right']}>
+    <SafeAreaView
+      style={[styles.safe, { backgroundColor: theme.colors.background }]}
+      edges={['left', 'right']}
+    >
       <TabHeader
         title={STR.projects.title}
         actions={[

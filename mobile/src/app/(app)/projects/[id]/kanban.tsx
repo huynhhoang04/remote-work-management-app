@@ -3,6 +3,7 @@ import React, { useCallback, useMemo, useState } from 'react';
 import { RefreshControl, ScrollView, SectionList, StyleSheet, View } from 'react-native';
 import { useQueryClient } from '@tanstack/react-query';
 import { Chip, FAB, IconButton, Menu, Searchbar, Text, useTheme } from 'react-native-paper';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { normalizeError } from '@/api/errors';
 import { AppButton } from '@/components/AppButton';
 import { KanbanBoard } from '@/components/KanbanBoard';
@@ -33,6 +34,7 @@ export default function ProjectKanbanScreen() {
   const theme = useTheme();
   const { show } = useSnackbar();
   const queryClient = useQueryClient();
+  const insets = useSafeAreaInsets();
 
   const project = useProject(id);
   const tasks = useProjectTasks(id);
@@ -190,7 +192,12 @@ export default function ProjectKanbanScreen() {
       )}
 
       {canWrite ? (
-        <FAB icon="plus" label={STR.tasks.createTitle} style={styles.fab} onPress={createTask} />
+        <FAB
+          icon="plus"
+          label={STR.tasks.createTitle}
+          style={[styles.fab, { bottom: spacing.xl + insets.bottom }]}
+          onPress={createTask}
+        />
       ) : null}
     </View>
   );
