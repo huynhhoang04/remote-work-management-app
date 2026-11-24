@@ -86,7 +86,7 @@ export default function ProjectStatsScreen() {
               </Text>
               {stats.data.perMember.length === 0 ? (
                 <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>
-                  {STR.common.noData}
+                  {STR.stats.noMemberStats}
                 </Text>
               ) : (
                 stats.data.perMember.map((member) => {

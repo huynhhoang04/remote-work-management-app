@@ -383,7 +383,7 @@ export default function TaskDetailScreen() {
             </View>
             {value.attachments.length === 0 ? (
               <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>
-                {STR.common.noData}
+                {STR.tasks.noAttachments}
               </Text>
             ) : (
               value.attachments.map((file, index) => (
@@ -454,7 +454,7 @@ export default function TaskDetailScreen() {
               })
             ) : (
               <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>
-                {STR.common.noData}
+                {STR.tasks.noComments}
               </Text>
             )}
 

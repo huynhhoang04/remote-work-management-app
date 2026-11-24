@@ -351,7 +351,9 @@ const styles = StyleSheet.create({
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   list: { padding: spacing.lg, paddingBottom: spacing.sm },
   loadingOlder: { paddingVertical: spacing.md },
-  empty: { alignItems: 'center', justifyContent: 'center', paddingVertical: spacing.xxl, transform: [{ scaleY: -1 }] },
+  // Không lật lại bằng transform: FlatList `inverted` đã tự bọc ListEmptyComponent
+  // bằng transform lật (VirtualizedList._renderEmptyComponent) — lật thêm sẽ ra chữ ngược.
+  empty: { alignItems: 'center', justifyContent: 'center', paddingVertical: spacing.xxl },
   replyBar: {
     flexDirection: 'row',
     alignItems: 'center',
