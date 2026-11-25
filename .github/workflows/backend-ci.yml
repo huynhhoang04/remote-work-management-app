@@ -29,6 +29,18 @@ jobs:
       - name: Run tests
         run: ./mvnw -B test
 
+      - name: Verify PostgreSQL integration tests ran
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import xml.etree.ElementTree as ET
+          for name in ("BackendIntegrationTest", "FeatureIntegrationTest"):
+              report = Path(f"target/surefire-reports/TEST-com.example.remoteapp.{name}.xml")
+              suite = ET.parse(report).getroot()
+              assert int(suite.get("tests", "0")) > 0, f"{name} chưa chạy"
+              assert int(suite.get("skipped", "0")) == 0, f"{name} bị bỏ qua trên CI"
+          PY
+
   # Chỉ deploy khi test xanh VÀ là push lên main.
   # Render đặt autoDeploy: false nên không có đường vòng nào bỏ qua CI.
   deploy:

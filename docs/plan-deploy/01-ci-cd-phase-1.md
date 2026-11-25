@@ -252,3 +252,11 @@ sequenceDiagram
 > Ghi chú: các bước 4–6 cần bạn thao tác trên dashboard Neon/Render (tôi không có quyền truy cập tài
 > khoản). Các bước 1–3, 7–8 tôi làm trực tiếp trong repo; bước 4–6 tôi đưa hướng dẫn từng bước + giá trị
 > cần dán, và kiểm tra kết quả qua URL công khai.
+
+### Docker API trong test tích hợp
+
+`backend/src/test/resources/docker-java.properties` đặt `api.version=1.44` để Testcontainers
+kết nối được Docker của GitHub runner. Nếu log báo `client version 1.32 is too old`,
+kiểm tra file này đã được copy vào test classpath. CI kiểm tra báo cáo Surefire và thất bại
+nếu `BackendIntegrationTest` hoặc `FeatureIntegrationTest` bị bỏ qua. Local vẫn tự bỏ qua
+các test này khi Docker chưa chạy theo `@Testcontainers(disabledWithoutDocker = true)`.
