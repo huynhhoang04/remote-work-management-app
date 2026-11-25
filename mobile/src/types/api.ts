@@ -289,7 +289,8 @@ export interface SendMessagePayload {
 
 export interface AuditLogDto {
   id: string;
-  actorId: string;
+  actorId: string | null;
+  actorName?: string | null;
   action: string;
   entityType: string;
   entityId: string;

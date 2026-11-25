@@ -1,6 +1,7 @@
 package com.example.remoteapp.project;
 
 import com.example.remoteapp.audit.AuditAction;
+import com.example.remoteapp.audit.AuditLog;
 import com.example.remoteapp.audit.AuditService;
 import com.example.remoteapp.audit.dto.AuditLogResponse;
 import com.example.remoteapp.common.AppException;
@@ -10,9 +11,11 @@ import com.example.remoteapp.project.dto.ProjectRequest;
 import com.example.remoteapp.project.dto.ProjectResponse;
 import com.example.remoteapp.user.User;
 import com.example.remoteapp.user.UserRepository;
+import com.example.remoteapp.user.UserService;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -36,6 +39,7 @@ public class ProjectService {
     private final ProjectPermissionService permissionService;
     private final UserRepository userRepository;
     private final AuditService auditService;
+    private final UserService userService;
 
     /**
      * Khởi tạo service (constructor injection tường minh).
@@ -45,16 +49,18 @@ public class ProjectService {
      * @param permissionService       kiểm tra phân quyền theo dự án
      * @param userRepository          repository người dùng (ghép thông tin thành viên)
      * @param auditService            ghi audit log
+     * @param userService             ghép tên người thực hiện audit qua public service
      * @reference docs/plan-backend/01-kien-truc-va-stack.md §4.1
      */
     public ProjectService(ProjectRepository projectRepository, ProjectMemberRepository projectMemberRepository,
                           ProjectPermissionService permissionService, UserRepository userRepository,
-                          AuditService auditService) {
+                          AuditService auditService, UserService userService) {
         this.projectRepository = projectRepository;
         this.projectMemberRepository = projectMemberRepository;
         this.permissionService = permissionService;
         this.userRepository = userRepository;
         this.auditService = auditService;
+        this.userService = userService;
     }
 
     /**
@@ -242,7 +248,11 @@ public class ProjectService {
     public Page<AuditLogResponse> listAuditLogs(UUID projectId, UUID actorId,
                                                 AuditAction action, Pageable pageable) {
         permissionService.requireRole(projectId, actorId, ProjectRole.OWNER);
-        return auditService.listByProject(projectId, action, pageable).map(AuditLogResponse::from);
+        Page<AuditLog> logs = auditService.listByProject(projectId, action, pageable);
+        Map<UUID, String> names = userService.namesByIds(logs.stream()
+                .map(AuditLog::getActorId).filter(Objects::nonNull).collect(Collectors.toSet()));
+        return logs.map(log -> AuditLogResponse.from(log,
+                log.getActorId() == null ? null : names.get(log.getActorId())));
     }
 
     /**

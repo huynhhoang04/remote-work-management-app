@@ -8,14 +8,13 @@ import java.time.Instant;
 import java.util.UUID;
 import lombok.Getter;
 import lombok.Setter;
-import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 /**
  * Lớp nền chung cho mọi entity: khoá chính UUID + timestamps + soft delete (plan 01 §8).
  *
  * <p>UUID khoá chính để client (mobile) có thể tự sinh ID nếu cần (ADR-06);
- * {@code createdAt}/{@updatedAt} tự quản lý bằng Hibernate.</p>
+ * {@code createdAt} được gán trước persist, {@code updatedAt} cập nhật bằng Hibernate.</p>
  *
  * @reference docs/plan-backend/01-kien-truc-va-stack.md §8
  * @reference docs/04-thiet-ke-backend.md §5.3
@@ -31,7 +30,6 @@ public abstract class BaseEntity {
     private UUID id;
 
     /** Thời điểm tạo bản ghi. */
-    @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
@@ -41,7 +39,7 @@ public abstract class BaseEntity {
     private Instant updatedAt;
 
     /**
-     * Sinh khoá chính UUID trước khi lưu nếu chưa có.
+     * Sinh UUID và thời điểm tạo trước khi lưu để DTO có timestamp ngay sau save.
      *
      * @reference docs/plan-backend/01-kien-truc-va-stack.md §8
      */
@@ -50,5 +48,6 @@ public abstract class BaseEntity {
         if (id == null) {
             id = UUID.randomUUID();
         }
+        createdAt = Instant.now();
     }
 }

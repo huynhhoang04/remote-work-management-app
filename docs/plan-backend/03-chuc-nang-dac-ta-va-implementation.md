@@ -229,6 +229,7 @@
 - Thành viên khác nhận qua WebSocket khi app mở; nhận **FCM push** (loại `MESSAGE`) khi app nền/offline.
 
 **Implementation**
+- `BaseEntity.@PrePersist` gán `createdAt` ngay khi persist, trước khi dựng DTO hoặc broadcast. Các luồng tạo tin nhắn, sự kiện và bình luận trả timestamp ngay trong phản hồi đầu tiên. `updatedAt` tiếp tục do Hibernate quản lý.
 - **WS chính, REST là fallback:** `ChatWsController` (`/app/chat.send`) → `ChatService.sendMessage`:
   1. Check membership (không phải thành viên → `403 CONVERSATION_FORBIDDEN`).
   2. Nếu `clientMessageId` đã tồn tại → trả message cũ (idempotent).
@@ -247,7 +248,8 @@
 
 **Implementation**
 - `AuditService.record(actorId, action, entityType, entityId, projectId, metadata)`: insert `audit_logs` **đồng bộ** trong transaction của request (bảng nhỏ, đơn giản; nếu chậm mới chuyển `@Async`).
-- Gọi tại các service tương ứng; `AuditLogController` chỉ đọc.
+- Gọi tại các service tương ứng. `ProjectService.listAuditLogs` kiểm quyền OWNER rồi ghép `actorName` qua `UserService.namesByIds` cho toàn trang. Module audit tiếp tục chỉ ghi/đọc audit, không thêm phụ thuộc sang user.
+- Mobile hiển thị tên người thực hiện, nhãn đối tượng tiếng Việt và metadata đã diễn giải. Bản ghi thiếu tên hoặc do hệ thống có nhãn dự phòng.
 
 ---
 

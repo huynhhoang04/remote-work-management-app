@@ -256,6 +256,7 @@ Client SEND /app/chat.send → ChatWsController → ChatService (lưu DB)
 ## 9. Quy ước code
 
 - Package theo feature; mỗi feature có `controller / service / repository / entity / dto`.
+- Timestamp tạo được gán trong `BaseEntity.@PrePersist` để phản hồi tạo mới và broadcast có `createdAt` ngay sau `save`. `updatedAt` cập nhật bằng Hibernate.
 - Entity: JPA + Lombok `@Getter @Setter`, kế thừa `BaseEntity` (UUID id, timestamps, soft delete).
 - DTO: Java `record` + annotation `@NotBlank`, `@Email`...; map entity ↔ DTO thủ công trong service.
 - Exception: ném `AppException(ErrorCode)`; không trả lỗi kiểu khác.

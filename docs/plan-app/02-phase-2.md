@@ -277,3 +277,8 @@ src/app/(app)/      projects/[id]/{index,kanban,members,stats,labels,settings,au
    trả 403, phase 3 sẽ ẩn theo `ownerId` nếu bổ sung DTO.
 7. Chưa có QA trên máy thật/emulator trong môi trường CI — phase 3 chạy checklist thủ công
    (đăng nhập 2 tài khoản, chat realtime, Render cold start, upload file).
+
+### Sửa lỗi QA ngày 26/11/2026
+
+- Nhật ký hoạt động dùng `actorName` từ API, nhãn loại đối tượng tiếng Việt và nội dung metadata đã diễn giải. Bản ghi hệ thống hoặc API cũ thiếu tên có nhãn dự phòng.
+- Bộ lọc đổi vai trò dùng đúng mã `ROLE_CHANGED` của backend.

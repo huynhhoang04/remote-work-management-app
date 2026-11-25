@@ -9,6 +9,7 @@ import java.util.UUID;
  *
  * @param id         id bản ghi
  * @param actorId    người thực hiện
+ * @param actorName  tên hiện tại của người thực hiện, null nếu hệ thống hoặc không còn hồ sơ
  * @param action     hành động
  * @param entityType loại đối tượng
  * @param entityId   id đối tượng
@@ -19,6 +20,7 @@ import java.util.UUID;
 public record AuditLogResponse(
         UUID id,
         UUID actorId,
+        String actorName,
         String action,
         String entityType,
         UUID entityId,
@@ -33,7 +35,19 @@ public record AuditLogResponse(
      * @reference docs/plan-backend/01-kien-truc-va-stack.md §4.1
      */
     public static AuditLogResponse from(AuditLog log) {
-        return new AuditLogResponse(log.getId(), log.getActorId(), log.getAction().name(),
+        return from(log, null);
+    }
+
+    /**
+     * Ánh xạ audit log với tên người thực hiện đã được ghép theo lô tại module project.
+     *
+     * @param log bản ghi audit
+     * @param actorName tên hiện tại, có thể null
+     * @return DTO phản hồi
+     * @reference docs/plan-backend/03-chuc-nang-dac-ta-va-implementation.md §G
+     */
+    public static AuditLogResponse from(AuditLog log, String actorName) {
+        return new AuditLogResponse(log.getId(), log.getActorId(), actorName, log.getAction().name(),
                 log.getEntityType(), log.getEntityId(), log.getMetadata(), log.getCreatedAt());
     }
 }

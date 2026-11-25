@@ -16,6 +16,10 @@
   "path": "/api/v1/tasks" }
 ```
 
+Đường dẫn không tồn tại trả `404 RESOURCE_NOT_FOUND` theo format trên. Các route yêu cầu đăng nhập vẫn kiểm tra token trước khi xác định đường dẫn.
+
+Các trường `createdAt` trong DTO tạo mới có giá trị ISO-8601 ngay ở phản hồi REST và broadcast STOMP đầu tiên.
+
 ### 1.2 Phân trang
 
 Dùng cho danh sách dài (tin nhắn, thông báo, audit log): `?page=0&size=20` → trả `content`, `totalElements`, `totalPages`.
@@ -135,6 +139,12 @@ JWT chứa `userId`, `email`. Vai trò theo dự án lấy từ bảng `project_
 |---|---|---|
 | `GET /projects/{id}/audit-logs?page=&size=&action=` | Owner | nhật ký hoạt động của dự án |
 
+Mỗi phần tử có `{id, actorId, actorName, action, entityType, entityId, metadata, createdAt}`.
+`actorName` là tên hồ sơ hiện tại, được ghép theo lô cho trang kết quả, kể cả người đã rời dự án.
+`actorId` có thể null với hoạt động hệ thống. `actorName` null nếu là hệ thống hoặc không còn hồ sơ.
+Client hiển thị nhãn tiếng Việt cho loại đối tượng, dùng `title=`/`name=` trong metadata khi có,
+và diễn giải `status=`, `role=`, `assignees=`. Bản ghi cũ thiếu tên dùng nhãn dự phòng.
+
 ## 11. File
 
 | Method & Path | Quyền | Request (chính) | Response (chính) |
@@ -196,5 +206,6 @@ JWT chứa `userId`, `email`. Vai trò theo dự án lấy từ bảng `project_
 | `CONVERSATION_FORBIDDEN` | 403 | Không phải thành viên hội thoại |
 | `MESSAGE_NOT_FOUND` | 404 | Không thấy tin nhắn / reply sai hội thoại |
 | `NOTIFICATION_NOT_FOUND` | 404 | Không thấy thông báo của chính mình |
+| `RESOURCE_NOT_FOUND` | 404 | Đường dẫn không tồn tại sau khi qua xác thực |
 | `VALIDATION_ERROR` | 400 | Lỗi validate DTO/tham số |
 | `INTERNAL_ERROR` | 500 | Lỗi không xác định |

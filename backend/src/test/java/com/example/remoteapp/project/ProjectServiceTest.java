@@ -11,19 +11,26 @@ import static org.mockito.Mockito.when;
 
 import com.example.remoteapp.audit.AuditAction;
 import com.example.remoteapp.audit.AuditService;
+import com.example.remoteapp.audit.AuditLog;
 import com.example.remoteapp.common.AppException;
 import com.example.remoteapp.common.ErrorCode;
 import com.example.remoteapp.project.dto.ProjectRequest;
 import com.example.remoteapp.project.dto.ProjectResponse;
 import com.example.remoteapp.user.UserRepository;
+import com.example.remoteapp.user.UserService;
 import java.time.Instant;
 import java.util.Optional;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 
 /**
  * Unit test cho {@link ProjectService} + {@link ProjectPermissionService} (RBAC).
@@ -41,6 +48,8 @@ class ProjectServiceTest {
     private UserRepository userRepository;
     @Mock
     private AuditService auditService;
+    @Mock
+    private UserService userService;
 
     private ProjectPermissionService permissionService;
     private ProjectService projectService;
@@ -49,7 +58,7 @@ class ProjectServiceTest {
     void setUp() {
         permissionService = new ProjectPermissionService(projectRepository, projectMemberRepository);
         projectService = new ProjectService(projectRepository, projectMemberRepository, permissionService,
-                userRepository, auditService);
+                userRepository, auditService, userService);
     }
 
     private Project project() {
@@ -221,5 +230,51 @@ class ProjectServiceTest {
                 .isInstanceOfSatisfying(AppException.class,
                         ex -> assertThat(ex.getErrorCode()).isEqualTo(ErrorCode.PROJECT_FORBIDDEN));
         verify(auditService, never()).listByProject(any(), any(), any());
+        verify(userService, never()).namesByIds(any());
+    }
+
+    /** @reference docs/plan-backend/03-chuc-nang-dac-ta-va-implementation.md §G */
+    @Test
+    void listAuditLogs_enrichesActorsInOneBatchIncludingFormerMembers() {
+        Project project = project();
+        UUID actorId = UUID.randomUUID();
+        UUID formerMemberId = UUID.randomUUID();
+        UUID missingUserId = UUID.randomUUID();
+        when(projectRepository.findByIdAndDeletedAtIsNull(project.getId())).thenReturn(Optional.of(project));
+        when(projectMemberRepository.findByProjectIdAndUserId(project.getId(), actorId))
+                .thenReturn(Optional.of(member(project.getId(), actorId, ProjectRole.OWNER)));
+        AuditLog formerMemberLog = auditLog(formerMemberId, project.getId());
+        AuditLog missingUserLog = auditLog(missingUserId, project.getId());
+        AuditLog systemLog = auditLog(null, project.getId());
+        PageRequest pageable = PageRequest.of(0, 3);
+        when(auditService.listByProject(project.getId(), AuditAction.TASK_CREATED, pageable))
+                .thenReturn(new PageImpl<>(List.of(formerMemberLog, missingUserLog, systemLog),
+                        pageable, 12));
+        when(userService.namesByIds(Set.of(formerMemberId, missingUserId)))
+                .thenReturn(Map.of(formerMemberId, "Thành viên đã rời dự án"));
+
+        var page = projectService.listAuditLogs(project.getId(), actorId, AuditAction.TASK_CREATED, pageable);
+
+        assertThat(page.getTotalElements()).isEqualTo(12);
+        assertThat(page.getContent().get(0).actorName()).isEqualTo("Thành viên đã rời dự án");
+        assertThat(page.getContent().get(0).actorId()).isEqualTo(formerMemberId);
+        assertThat(page.getContent().get(0).metadata()).isEqualTo("title=Công việc cũ");
+        assertThat(page.getContent().get(1).actorName()).isNull();
+        assertThat(page.getContent().get(2).actorId()).isNull();
+        assertThat(page.getContent().get(2).actorName()).isNull();
+        verify(userService).namesByIds(Set.of(formerMemberId, missingUserId));
+    }
+
+    private AuditLog auditLog(UUID actorId, UUID projectId) {
+        AuditLog log = new AuditLog();
+        log.setId(UUID.randomUUID());
+        log.setActorId(actorId);
+        log.setProjectId(projectId);
+        log.setAction(AuditAction.TASK_CREATED);
+        log.setEntityType("TASK");
+        log.setEntityId(UUID.randomUUID());
+        log.setMetadata("title=Công việc cũ");
+        log.setCreatedAt(Instant.now());
+        return log;
     }
 }

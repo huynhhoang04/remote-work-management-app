@@ -21,6 +21,14 @@ runtime:
       test("có bản ghi audit", function () {
         expect(res.body.content.length).to.be.at.least(1);
       });
+      test("có tên người thực hiện trong phản hồi audit", function () {
+        res.body.content.forEach(function (entry) {
+          expect(entry).to.have.property("actorName");
+          if (entry.actorId) {
+            expect(entry.actorName).to.be.a("string").and.not.empty;
+          }
+        });
+      });
       test("ghi nhận hành động tạo dự án", function () {
         const actions = res.body.content.map(function (entry) { return entry.action; });
         expect(actions).to.contain("PROJECT_CREATED");

@@ -321,7 +321,7 @@ export const STR = {
     PROJECT_DELETED: 'Xoá dự án',
     MEMBER_JOINED: 'Thành viên tham gia',
     MEMBER_REMOVED: 'Gỡ thành viên',
-    MEMBER_ROLE_CHANGED: 'Đổi vai trò thành viên',
+    ROLE_CHANGED: 'Đổi vai trò thành viên',
     INVITE_CREATED: 'Tạo link mời',
     INVITE_REVOKED: 'Thu hồi link mời',
     TASK_CREATED: 'Tạo công việc',
@@ -332,6 +332,23 @@ export const STR = {
     COMMENT_CREATED: 'Bình luận',
     USER_PASSWORD_CHANGED: 'Đổi mật khẩu',
   } as Record<string, string>,
+
+  auditDetails: {
+    system: 'Hệ thống',
+    unavailableUser: 'Người dùng không còn khả dụng',
+    entity: 'Đối tượng',
+    entities: {
+      PROJECT: 'Dự án',
+      TASK: 'Công việc',
+      MEMBER: 'Thành viên',
+      INVITE: 'Link mời',
+      COMMENT: 'Bình luận',
+      USER: 'Tài khoản',
+    } as Record<string, string>,
+    status: 'Trạng thái',
+    role: 'Vai trò',
+    assignees: 'Số người được giao',
+  },
 
   profileExtra: {
     avatarChanged: 'Đã cập nhật ảnh đại diện',

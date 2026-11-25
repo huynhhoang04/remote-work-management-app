@@ -14,6 +14,8 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.web.servlet.NoHandlerFoundException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 /**
  * Chuyển mọi exception thành response lỗi thống nhất (plan 02 §1.1).
@@ -24,6 +26,21 @@ import org.springframework.web.multipart.MaxUploadSizeExceededException;
 @Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+    /**
+     * Trả 404 cho đường dẫn không có controller hoặc tài nguyên tương ứng.
+     *
+     * @param ex exception không tìm thấy đường dẫn
+     * @param request request hiện tại
+     * @return response RESOURCE_NOT_FOUND theo format lỗi chuẩn
+     * @reference docs/plan-backend/03-chuc-nang-dac-ta-va-implementation.md §I
+     */
+    @ExceptionHandler({NoHandlerFoundException.class, NoResourceFoundException.class})
+    public ResponseEntity<ErrorResponse> handleNotFound(Exception ex, HttpServletRequest request) {
+        ErrorResponse body = ErrorResponse.of(ErrorCode.RESOURCE_NOT_FOUND,
+                "Không tìm thấy đường dẫn yêu cầu", request.getRequestURI());
+        return ResponseEntity.status(body.status()).body(body);
+    }
 
     /**
      * Xử lý exception nghiệp vụ {@link AppException}.

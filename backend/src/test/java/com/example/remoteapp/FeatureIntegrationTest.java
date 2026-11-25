@@ -11,20 +11,30 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.example.remoteapp.auth.dto.LoginRequest;
 import com.example.remoteapp.auth.dto.RegisterRequest;
+import com.example.remoteapp.chat.ChatWsController;
+import com.example.remoteapp.chat.dto.WsSendMessageRequest;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.UUID;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.messaging.Message;
+import org.springframework.messaging.MessageChannel;
+import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
+import org.springframework.messaging.support.AbstractSubscribableChannel;
+import org.springframework.messaging.support.ChannelInterceptor;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
@@ -66,6 +76,77 @@ class FeatureIntegrationTest {
 
     @Autowired private MockMvc mockMvc;
     @Autowired private ObjectMapper objectMapper;
+    @Autowired private ChatWsController chatWsController;
+    @Autowired @Qualifier("brokerChannel") private AbstractSubscribableChannel brokerChannel;
+
+    /** @reference docs/plan-backend/03-chuc-nang-dac-ta-va-implementation.md §D1, §F2 */
+    @Test
+    void creationTimestamps_arePresentInRestAndSerializedStompMessages() throws Exception {
+        String email = "timestamp-" + UUID.randomUUID() + "@example.com";
+        register(email, "password-123", "Timestamp Owner");
+        JsonNode owner = login(email, "password-123");
+        String token = owner.get("accessToken").asText();
+        String ownerId = owner.get("user").get("id").asText();
+        String projectId = createProject(token, "Timestamp regression");
+        JsonNode conversations = objectMapper.readTree(mockMvc.perform(get("/api/v1/conversations")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString());
+        String conversationId = conversations.get(0).get("id").asText();
+        String destination = "/topic/conversations." + conversationId;
+        List<Message<?>> broadcasts = new CopyOnWriteArrayList<>();
+        ChannelInterceptor interceptor = new ChannelInterceptor() {
+            /** @reference docs/plan-backend/03-chuc-nang-dac-ta-va-implementation.md §F2 */
+            @Override
+            public Message<?> preSend(Message<?> message, MessageChannel channel) {
+                if (destination.equals(SimpMessageHeaderAccessor.getDestination(message.getHeaders()))) {
+                    broadcasts.add(message);
+                }
+                return message;
+            }
+        };
+        brokerChannel.addInterceptor(interceptor);
+        try {
+            String request = "{\"content\":\"REST timestamp\",\"clientMessageId\":\""
+                    + UUID.randomUUID() + "\"}";
+            JsonNode sent = objectMapper.readTree(mockMvc.perform(post("/api/v1/conversations/"
+                            + conversationId + "/messages")
+                            .header("Authorization", "Bearer " + token)
+                            .contentType(MediaType.APPLICATION_JSON).content(request))
+                    .andExpect(status().isCreated())
+                    .andExpect(jsonPath("$.createdAt").isNotEmpty())
+                    .andReturn().getResponse().getContentAsString());
+            mockMvc.perform(post("/api/v1/conversations/" + conversationId + "/messages")
+                            .header("Authorization", "Bearer " + token)
+                            .contentType(MediaType.APPLICATION_JSON).content(request))
+                    .andExpect(status().isCreated())
+                    .andExpect(jsonPath("$.id").value(sent.get("id").asText()))
+                    .andExpect(jsonPath("$.createdAt").isNotEmpty());
+
+            chatWsController.send(new WsSendMessageRequest(UUID.fromString(conversationId),
+                    "STOMP timestamp", null, UUID.randomUUID()), () -> ownerId);
+            assertThat(broadcasts).hasSize(2);
+            for (Message<?> broadcast : broadcasts) {
+                JsonNode payload = objectMapper.readTree((byte[]) broadcast.getPayload());
+                assertThat(payload.get("createdAt").isTextual()).isTrue();
+                assertThat(Instant.parse(payload.get("createdAt").asText())).isNotNull();
+            }
+            mockMvc.perform(get("/api/v1/conversations")
+                            .header("Authorization", "Bearer " + token))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$[0].lastMessage.content").value("STOMP timestamp"))
+                    .andExpect(jsonPath("$[0].lastMessage.createdAt").isNotEmpty());
+        } finally {
+            brokerChannel.removeInterceptor(interceptor);
+        }
+        Instant start = Instant.now().plus(1, ChronoUnit.HOURS);
+        mockMvc.perform(post("/api/v1/schedule/events")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"title\":\"Timestamp event\",\"startTime\":\"" + start
+                                + "\",\"endTime\":\"" + start.plus(1, ChronoUnit.HOURS) + "\"}"))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.createdAt").isNotEmpty());
+    }
 
     /** @reference docs/plan-backend/03-chuc-nang-dac-ta-va-implementation.md §C–§F */
     @Test
@@ -108,6 +189,7 @@ class FeatureIntegrationTest {
                                 + "\"labelIds\":[\"" + labelId + "\"],"
                                 + "\"assigneeIds\":[\"" + memberId + "\"]}"))
                 .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.createdAt").isNotEmpty())
                 .andExpect(jsonPath("$.status").value("TODO"))
                 .andExpect(jsonPath("$.assignees.length()").value(1))
                 .andExpect(jsonPath("$.version").value(0))
@@ -169,7 +251,8 @@ class FeatureIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"content\":\"@Member xem giup\",\"mentionUserIds\":[\""
                                 + memberId + "\"]}"))
-                .andExpect(status().isCreated());
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.createdAt").isNotEmpty());
         mockMvc.perform(get("/api/v1/tasks/" + taskId + "/comments")
                         .header("Authorization", "Bearer " + ownerToken))
                 .andExpect(status().isOk())

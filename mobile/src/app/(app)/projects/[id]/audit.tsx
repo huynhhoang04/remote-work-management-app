@@ -9,6 +9,7 @@ import { useAuditLogs } from '@/features/projects/hooks';
 import { radius, spacing } from '@/theme/tokens';
 import { formatDateTime } from '@/utils/format';
 import { STR } from '@/utils/constants';
+import { auditActorName, formatAuditMetadata } from '@/utils/audit';
 
 /**
  * Nhật ký hoạt động dự án (chỉ Owner xem được).
@@ -77,28 +78,31 @@ export default function ProjectAuditScreen() {
             if (logs.hasNextPage && !logs.isFetchingNextPage) void logs.fetchNextPage();
           }}
           ListFooterComponent={logs.isFetchingNextPage ? <ActivityIndicator style={styles.footer} /> : undefined}
-          renderItem={({ item }) => (
-            <Card mode="elevated" style={styles.card}>
-              <Card.Content style={styles.row}>
-                <View style={styles.actionBadge}>
-                  <Text variant="labelSmall" style={{ color: theme.colors.primary, fontWeight: '700' }}>
-                    {(STR.audit as Record<string, string>)[item.action] ?? item.action}
+          renderItem={({ item }) => {
+            const details = formatAuditMetadata(item.metadata);
+            return (
+              <Card mode="elevated" style={styles.card}>
+                <Card.Content style={styles.row}>
+                  <View style={styles.actionBadge}>
+                    <Text variant="labelSmall" style={{ color: theme.colors.primary, fontWeight: '700' }}>
+                      {(STR.audit as Record<string, string>)[item.action] ?? item.action}
+                    </Text>
+                  </View>
+                  <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>
+                    {STR.auditDetails.entities[item.entityType] ?? STR.auditDetails.entity}
                   </Text>
-                </View>
-                <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>
-                  {item.entityType} · {item.entityId.slice(0, 8)}
-                </Text>
-                {item.metadata ? (
-                  <Text variant="bodySmall" style={{ color: theme.colors.onSurface }}>
-                    {item.metadata}
+                  {details ? (
+                    <Text variant="bodySmall" style={{ color: theme.colors.onSurface }}>
+                      {details}
+                    </Text>
+                  ) : null}
+                  <Text variant="labelSmall" style={{ color: theme.colors.onSurfaceVariant }}>
+                    {formatDateTime(item.createdAt)} · {auditActorName(item)}
                   </Text>
-                ) : null}
-                <Text variant="labelSmall" style={{ color: theme.colors.onSurfaceVariant }}>
-                  {formatDateTime(item.createdAt)} · {item.actorId.slice(0, 8)}
-                </Text>
-              </Card.Content>
-            </Card>
-          )}
+                </Card.Content>
+              </Card>
+            );
+          }}
         />
       )}
     </View>

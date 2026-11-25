@@ -63,6 +63,27 @@ class BackendIntegrationTest {
     @Autowired
     private ObjectMapper objectMapper;
 
+    /** @reference docs/plan-backend/03-chuc-nang-dac-ta-va-implementation.md §I */
+    @Test
+    void unknownRoutes_return404AfterAuthentication() throws Exception {
+        String email = "route-" + UUID.randomUUID() + "@example.com";
+        register(email, "password-123", "Route Owner");
+        String token = login(email, "password-123").get("accessToken").asText();
+        for (String path : new String[] {"/api/v1/does-not-exist",
+                "/api/v1/projects/" + UUID.randomUUID() + "/nope",
+                "/api/v1/projects/" + UUID.randomUUID() + "/conversations"}) {
+            mockMvc.perform(get(path).header("Authorization", "Bearer " + token))
+                    .andExpect(status().isNotFound())
+                    .andExpect(jsonPath("$.status").value(404))
+                    .andExpect(jsonPath("$.code").value("RESOURCE_NOT_FOUND"))
+                    .andExpect(jsonPath("$.timestamp").isNotEmpty())
+                    .andExpect(jsonPath("$.message").isNotEmpty())
+                    .andExpect(jsonPath("$.path").value(path));
+        }
+        mockMvc.perform(get("/api/v1/does-not-exist"))
+                .andExpect(status().isUnauthorized());
+    }
+
     /** @reference docs/plan-backend/03-chuc-nang-dac-ta-va-implementation.md §A1–§A4 */
     @Test
     void authFlow_registerLoginRefreshChangePassword() throws Exception {
@@ -237,7 +258,8 @@ class BackendIntegrationTest {
         mockMvc.perform(get("/api/v1/projects/" + projectId + "/audit-logs")
                         .header("Authorization", "Bearer " + ownerToken))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.content").isNotEmpty());
+                .andExpect(jsonPath("$.content").isNotEmpty())
+                .andExpect(jsonPath("$.content[0].actorName").isNotEmpty());
     }
 
     private void register(String email, String password, String fullName) throws Exception {
