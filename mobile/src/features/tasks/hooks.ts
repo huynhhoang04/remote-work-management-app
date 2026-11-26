@@ -152,9 +152,9 @@ export function useAddSubtask(taskId: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (title: string) => tasksApi.addSubtask(taskId, title),
-    onSuccess: async (task) => {
-      queryClient.setQueryData(['task', taskId], task);
-      await invalidateTaskSideEffects(queryClient, task.projectId);
+    onSuccess: async (subtask) => {
+      await queryClient.invalidateQueries({ queryKey: ['task', taskId], exact: true });
+      await invalidateTaskSideEffects(queryClient, subtask.projectId);
     },
   });
 }

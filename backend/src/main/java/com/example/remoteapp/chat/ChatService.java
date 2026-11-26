@@ -224,7 +224,7 @@ public class ChatService {
         message.setContent(request.content().trim());
         message.setReplyToId(request.replyToId());
         message.setClientMessageId(request.clientMessageId());
-        messageRepository.save(message);
+        messageRepository.saveAndFlush(message);
 
         MessageResponse response = toMessage(message,
                 userService.namesByIds(Set.of(actorId)));

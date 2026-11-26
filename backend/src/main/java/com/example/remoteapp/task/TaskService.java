@@ -205,7 +205,7 @@ public class TaskService {
         if (status == TaskStatus.DONE) {
             task.setCompletedAt(Instant.now());
         }
-        taskRepository.save(task);
+        taskRepository.saveAndFlush(task);
 
         List<UUID> assigneeIds = resolveAssignees(request.projectId(), actorId, request.assigneeIds());
         replaceAssignees(task.getId(), assigneeIds);
@@ -261,7 +261,7 @@ public class TaskService {
             task.setPosition(request.position());
         }
         validateWindow(task.getStartDate(), task.getDeadline());
-        taskRepository.save(task);
+        taskRepository.saveAndFlush(task);
 
         List<UUID> added = List.of();
         if (request.assigneeIds() != null) {
@@ -298,7 +298,7 @@ public class TaskService {
         Task task = requireWritable(taskId, actorId);
         TaskStatus previous = task.getStatus();
         applyStatus(task, status);
-        taskRepository.save(task);
+        taskRepository.saveAndFlush(task);
         if (previous != status) {
             auditService.record(actorId, task.getProjectId(), AuditAction.TASK_STATUS_CHANGED,
                     ENTITY_TYPE, taskId, "status=" + status.name());
@@ -320,7 +320,7 @@ public class TaskService {
         boolean statusChanged = task.getStatus() != request.status();
         applyStatus(task, request.status());
         task.setPosition(request.position());
-        taskRepository.save(task);
+        taskRepository.saveAndFlush(task);
         if (statusChanged) {
             auditService.record(actorId, task.getProjectId(), AuditAction.TASK_STATUS_CHANGED,
                     ENTITY_TYPE, taskId, "status=" + request.status().name());
@@ -366,11 +366,11 @@ public class TaskService {
         for (Task child : children) {
             if (child.getDeletedAt() == null) {
                 child.setDeletedAt(now);
-                taskRepository.save(child);
+                taskRepository.saveAndFlush(child);
             }
         }
         task.setDeletedAt(now);
-        taskRepository.save(task);
+        taskRepository.saveAndFlush(task);
         auditService.record(actorId, task.getProjectId(), AuditAction.TASK_DELETED, ENTITY_TYPE,
                 taskId, null);
     }
@@ -400,7 +400,7 @@ public class TaskService {
         subtask.setPriority(parent.getPriority());
         subtask.setCreatedBy(actorId);
         subtask.setPosition(taskRepository.maxSiblingPosition(parent.getId()) + 1000);
-        taskRepository.save(subtask);
+        taskRepository.saveAndFlush(subtask);
         auditService.record(actorId, parent.getProjectId(), AuditAction.TASK_CREATED, ENTITY_TYPE,
                 subtask.getId(), "parent=" + parent.getId());
         return get(subtask.getId(), actorId);
@@ -429,7 +429,7 @@ public class TaskService {
         if (request.done() != null) {
             applyStatus(subtask, request.done() ? TaskStatus.DONE : TaskStatus.TODO);
         }
-        taskRepository.save(subtask);
+        taskRepository.saveAndFlush(subtask);
         auditService.record(actorId, subtask.getProjectId(), AuditAction.TASK_UPDATED, ENTITY_TYPE,
                 subtaskId, "subtask");
     }
@@ -447,7 +447,7 @@ public class TaskService {
         requireWritable(taskId, actorId);
         Task subtask = findSubtask(taskId, subtaskId);
         subtask.setDeletedAt(Instant.now());
-        taskRepository.save(subtask);
+        taskRepository.saveAndFlush(subtask);
         auditService.record(actorId, subtask.getProjectId(), AuditAction.TASK_DELETED, ENTITY_TYPE,
                 subtaskId, "subtask");
     }

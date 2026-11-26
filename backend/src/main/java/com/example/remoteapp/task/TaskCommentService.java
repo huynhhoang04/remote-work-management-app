@@ -99,7 +99,7 @@ public class TaskCommentService {
         comment.setTaskId(taskId);
         comment.setUserId(actorId);
         comment.setContent(request.content().trim());
-        commentRepository.save(comment);
+        commentRepository.saveAndFlush(comment);
 
         auditService.record(actorId, task.getProjectId(), AuditAction.COMMENT_CREATED, ENTITY_TYPE,
                 comment.getId(), "task=" + taskId);
@@ -134,7 +134,7 @@ public class TaskCommentService {
                     "Chỉ tác giả mới được sửa bình luận");
         }
         comment.setContent(request.content().trim());
-        commentRepository.save(comment);
+        commentRepository.saveAndFlush(comment);
     }
 
     /**
@@ -155,7 +155,7 @@ public class TaskCommentService {
                     "Chỉ tác giả mới được xoá bình luận");
         }
         comment.setDeletedAt(Instant.now());
-        commentRepository.save(comment);
+        commentRepository.saveAndFlush(comment);
     }
 
     /**

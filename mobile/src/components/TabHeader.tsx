@@ -1,6 +1,6 @@
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
-import { Appbar, Badge, useTheme } from 'react-native-paper';
+import { Appbar, Badge, Text, useTheme } from 'react-native-paper';
 
 export interface HeaderAction {
   icon: string;
@@ -25,12 +25,18 @@ export function TabHeader({ title, subtitle, actions }: Props) {
       statusBarHeight={undefined}
       elevated={false}
     >
-      <Appbar.Content
-        title={title}
-        titleStyle={styles.title}
-        subtitle={subtitle}
-        subtitleStyle={{ color: theme.colors.onSurfaceVariant }}
-      />
+      {subtitle ? (
+        <View style={{ flex: 1, paddingHorizontal: 12 }}>
+          <Text variant="titleLarge" style={styles.title} numberOfLines={1}>
+            {title}
+          </Text>
+          <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant }} numberOfLines={1}>
+            {subtitle}
+          </Text>
+        </View>
+      ) : (
+        <Appbar.Content title={title} titleStyle={styles.title} />
+      )}
       {actions?.map((action) => (
         <View key={action.icon}>
           <Appbar.Action

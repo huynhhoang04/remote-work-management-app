@@ -28,6 +28,7 @@ interface ColumnBounds {
  * @reference docs/plan-app/02-phase-2.md §5.4
  */
 export function KanbanBoard({ tasks, onOpenTask, onMoveTask, readOnly = false }: BoardProps) {
+  const theme = useTheme();
   const { width } = useWindowDimensions();
   const columnWidth = Math.min(300, Math.max(240, width * 0.8));
   const columnRefs = useRef<Record<string, React.ComponentRef<typeof View> | null>>({});
@@ -99,8 +100,8 @@ export function KanbanBoard({ tasks, onOpenTask, onMoveTask, readOnly = false }:
             >
               {columnTasks.length === 0 ? (
                 <View style={styles.emptyColumn}>
-                  <Icon source="tray" size={22} color="#94A3B8" />
-                  <Text variant="labelSmall" style={styles.emptyText}>
+                  <Icon source="tray" size={22} color={theme.colors.onSurfaceVariant} />
+                  <Text variant="labelSmall" style={{ color: theme.colors.onSurfaceVariant }}>
                     Trống
                   </Text>
                 </View>
@@ -212,6 +213,6 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.xl,
     gap: spacing.xs,
   },
-  emptyText: { color: '#94A3B8' },
+  emptyText: { color: 'transparent' }, // Được ghi đè bằng theme inline
   draggable: { borderRadius: radius.md },
 });

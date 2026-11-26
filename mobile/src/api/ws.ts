@@ -31,11 +31,16 @@ class RealtimeClient {
   /** Bật kết nối (idempotent). Không có token → bỏ qua. */
   start(): void {
     if (this.client) return;
-    const url = websocketUrl();
-    if (!url) return;
 
     const client = new Client({
-      webSocketFactory: () => new WebSocket(url) as unknown as WebSocket,
+      webSocketFactory: () => {
+        const url = websocketUrl();
+        if (!url) {
+          // Trả về WebSocket giả để không crash, nhưng reconnect sẽ thử lại sau
+          throw new Error('No valid token for WebSocket');
+        }
+        return new WebSocket(url) as unknown as WebSocket;
+      },
       reconnectDelay: 5000,
       connectionTimeout: 10000,
       heartbeatIncoming: 10000,

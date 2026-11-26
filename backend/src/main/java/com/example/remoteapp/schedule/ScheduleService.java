@@ -86,7 +86,7 @@ public class ScheduleService {
         ScheduleEvent event = new ScheduleEvent();
         event.setUserId(actorId);
         apply(event, request);
-        eventRepository.save(event);
+        eventRepository.saveAndFlush(event);
         return ScheduleEventResponse.from(event);
     }
 
@@ -108,7 +108,7 @@ public class ScheduleService {
             taskService.requireAccessible(request.taskId(), actorId);
         }
         apply(event, request);
-        eventRepository.save(event);
+        eventRepository.saveAndFlush(event);
         return ScheduleEventResponse.from(event);
     }
 

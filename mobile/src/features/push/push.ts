@@ -1,20 +1,25 @@
 import * as Device from 'expo-device';
-import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
 import { devicesApi } from '../../api/devices';
+import { Notifications } from './safeNotifications';
 
 let registeredToken: string | null = null;
 
 /** Cấu hình cách hiển thị thông báo khi app đang mở. */
 export function configureForegroundNotifications(): void {
-  Notifications.setNotificationHandler({
-    handleNotification: async () => ({
-      shouldShowBanner: true,
-      shouldShowList: true,
-      shouldPlaySound: false,
-      shouldSetBadge: false,
-    }),
-  });
+  if (!Notifications) return;
+  try {
+    Notifications.setNotificationHandler({
+      handleNotification: async () => ({
+        shouldShowBanner: true,
+        shouldShowList: true,
+        shouldPlaySound: false,
+        shouldSetBadge: false,
+      }),
+    });
+  } catch {
+    // Expo Go / thiếu native module -> bỏ qua
+  }
 }
 
 /**
@@ -23,7 +28,7 @@ export function configureForegroundNotifications(): void {
  * @reference docs/plan-app/02-phase-2.md §5.10
  */
 export async function registerForPushNotifications(): Promise<string | null> {
-  if (Platform.OS === 'web' || !Device.isDevice) return null;
+  if (Platform.OS === 'web' || !Device.isDevice || !Notifications) return null;
 
   try {
     const existing = await Notifications.getPermissionsAsync();

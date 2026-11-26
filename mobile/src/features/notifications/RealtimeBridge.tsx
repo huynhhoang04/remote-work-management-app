@@ -1,11 +1,12 @@
 import { useQueryClient } from '@tanstack/react-query';
-import * as Notifications from 'expo-notifications';
+import type * as NotificationsType from 'expo-notifications';
 import { router } from 'expo-router';
 import { useEffect } from 'react';
 import { parseStompBody, realtime } from '../../api/ws';
 import { useSession } from '../../store/session';
 import type { NotificationDto, UnreadCountDto } from '../../types/api';
 import { registerForPushNotifications, unregisterPushNotifications } from '../push/push';
+import { Notifications } from '../push/safeNotifications';
 
 interface PushData {
   refType?: string;
@@ -21,7 +22,7 @@ function openFromNotification(data: PushData | undefined): void {
   }
 }
 
-function dataOf(notification: Notifications.Notification): PushData | undefined {
+function dataOf(notification: NotificationsType.Notification): PushData | undefined {
   return notification.request.content.data as PushData | undefined;
 }
 
@@ -50,17 +51,25 @@ export function RealtimeBridge() {
       void queryClient.invalidateQueries({ queryKey: ['conversations'] });
     });
 
-    const responseListener = Notifications.addNotificationResponseReceivedListener((response) => {
-      openFromNotification(dataOf(response.notification));
-    });
+    let responseSubscription: { remove: () => void } | undefined;
 
-    void Notifications.getLastNotificationResponseAsync().then((response) => {
-      if (response) openFromNotification(dataOf(response.notification));
-    });
+    if (Notifications) {
+      try {
+        responseSubscription = Notifications.addNotificationResponseReceivedListener((response) => {
+          openFromNotification(dataOf(response.notification));
+        });
+
+        void Notifications.getLastNotificationResponseAsync().then((response) => {
+          if (response) openFromNotification(dataOf(response.notification));
+        });
+      } catch {
+        // Expo Go / native module không khả dụng
+      }
+    }
 
     return () => {
       unsubscribe();
-      responseListener.remove();
+      responseSubscription?.remove();
       void realtime.stop();
       void unregisterPushNotifications();
     };
